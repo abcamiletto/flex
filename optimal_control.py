@@ -21,9 +21,10 @@ class Urdf2Moon:
         self.u = self.u_hat + self.G
         self.upper_x, self.lower_x = self.get_limits(self.root, self.tip)
 
-    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, upper_u = None, lower_u=None, rk_interval=4):
+    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, upper_u = None, lower_u=None, rk_interval=4):
         #Store Values
         self.cost_func = cost_func
+        self.final_term_cost = final_term_cost
         self.T = time_horizon
         self.N = control_steps
         self.initial_cond = initial_cond
@@ -41,7 +42,8 @@ class Urdf2Moon:
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.u_hat_opt = self.nlp_solver(self.initial_cond, self.upper_x, self.lower_x, self.upper_u, self.lower_u)
+        self.u_hat_opt = self.nlp_solver(self.initial_cond, self.final_term_cost, 
+                                         self.upper_x, self.lower_x, self.upper_u, self.lower_u, self.traj, self.traj_dot)
         self.x_opt = self.get_x_opt(self.F, self.u_hat_opt, self.initial_cond)
         
     
@@ -75,7 +77,7 @@ class Urdf2Moon:
         lhs1 = self.q_dot
         lhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, self.u_hat)
         
-        self.tr, self.tr_d = self.derive_trajectory(traj, self.t)
+        self.tr, self.tr_d, self.traj_dot = self.derive_trajectory(traj, self.t)
         J_dot = cost_func(self.q-self.tr, self.q_dot-self.tr_d, self.u)
         
         self.x = cs.vertcat(self.q, self.q_dot)
@@ -108,7 +110,7 @@ class Urdf2Moon:
 
         F = cs.Function('F', [X0, U, t], [X, Q],['x0','p', 'time'],['xf','qf'])
         return F
-    def nlp_solver(self, initial_cond, upper_x, lower_x, upper_u, lower_u):
+    def nlp_solver(self, initial_cond, final_term_cost, upper_x, lower_x, upper_u, lower_u, traj, traj_dot):
         # Start with an empty NLP
         u       = []    #input vector
         u_g     = []    #initial guess
@@ -142,6 +144,10 @@ class Urdf2Moon:
             # Add inequality constraint
             g.append(Xk[0:self.num_joints])    # g += [x_1, x_2, x_1d, x_2d]
 
+        # add a final term cost. If not specified is 0.
+        if final_term_cost != None:
+            J = J+final_term_cost(Xk[0:self.num_joints]-traj(self.T), Xk[self.num_joints:]-traj_dot(self.T), Uk) # f_t_c(q, qd, u)    
+            
         # Define the problem to be solved
         problem = {'f': J, 'x': cs.vertcat(*u), 'g': cs.vertcat(*g)}
         # NLP solver options
@@ -165,10 +171,11 @@ class Urdf2Moon:
         x_res = [np.array([r[k] for r in x_opt], dtype='f') for k in range(2*self.num_joints)]
         return x_res
     def derive_trajectory(self, traj, t):
-        traj_dot = [cs.jacobian(traj(t)[idx],t) for idx in range(self.num_joints)]
+        traj_dot_list = [cs.jacobian(traj(t)[idx],t) for idx in range(self.num_joints)]
         traj_sx = cs.vertcat(*traj(t))
-        traj_dot_sx = cs.vertcat(*traj_dot)
-        return traj_sx, traj_dot_sx
+        traj_dot_sx = cs.vertcat(*traj_dot_list)
+        traj_dot = cs.Function('traj_dot', [t], [traj_dot_sx], ['t'], ['traj_dot'])
+        return traj_sx, traj_dot_sx, traj_dot
 
     def print_results(self):
         tgrid = [self.T/self.N*k for k in range(self.N+1)]
@@ -188,13 +195,16 @@ class Urdf2Moon:
         
 
 if __name__ == '__main__':
-    urdf_path = "urdf/rrbot.urdf"
+    urdf_path = "../urdf/rrbot.urdf"
     root = "link1" 
     end = "link3"
 
     def my_cost_func(q, qd, u):
         return 10*cs.mtimes(q.T,q) + cs.mtimes(qd.T,qd) + cs.mtimes(u.T,u)/10
 
+    def my_final_term_cost(q_f, qd_f, u_f):
+        return 0.1*(10*cs.mtimes(q_f.T,q_f) + cs.mtimes(qd_f.T,qd_f))
+    
     def trajectory_target(t):
         q = [t*0.1, t*0.1]
         return q
