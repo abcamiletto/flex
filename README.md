@@ -12,4 +12,5 @@ Things to do:
 - [ ] Check sparse Hessian *problem*
 - [x] Fix Latex Mathematical Modeling
 - [ ] Check other nlp solvers other than ipopt
+- [ ] Check ipopt options and try some
 
