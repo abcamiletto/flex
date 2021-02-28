@@ -10,5 +10,5 @@ Things to do:
 - [ ] Cost function on final position
 - [ ] Check performance with SX/MX
 - [ ] Check sparse Hessian *problem*
-- [ ] Fix Latex Mathematical Modeling
+- [x] Fix Latex Mathematical Modeling
 
