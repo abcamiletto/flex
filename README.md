@@ -11,4 +11,5 @@ Things to do:
 - [ ] Check performance with SX/MX
 - [ ] Check sparse Hessian *problem*
 - [x] Fix Latex Mathematical Modeling
+- [ ] Check other nlp solvers other than ipopt
 
