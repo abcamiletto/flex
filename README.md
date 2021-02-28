@@ -5,8 +5,8 @@
 Things to do:
 - [x] Indipendence to number of joints
 - [x] Joint limits from URDF
-- [ ] Reference point different from origin
-- [ ] Reference Trajectory
+- [x] Reference point different from origin
+- [x] Reference Trajectory
 - [ ] Cost function on final position
 - [ ] Check performance with SX/MX
 - [ ] Check sparse Hessian *problem*
