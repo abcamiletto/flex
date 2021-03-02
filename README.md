@@ -13,5 +13,5 @@ Things to do:
 - [x] Fix Latex Mathematical Modeling
 - [ ] Check other nlp solvers other than ipopt
 - [ ] Check ipopt options and try some
-- [x] Evaluate u = u_hat + g
+- [x] Reconstruct the actual optimal input
 
