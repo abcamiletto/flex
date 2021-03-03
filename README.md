@@ -9,7 +9,7 @@ Things to do:
 - [x] Reference Trajectory
 - [x] Cost function on final position
 - [x] Check performance with SX/MX
-- [ ] Check sparse Hessian *problem*
+- [x] Check sparse Hessian *problem*
 - [x] Fix Latex Mathematical Modeling
 - [ ] Check other nlp solvers other than ipopt
 - [ ] Check ipopt options and try some
