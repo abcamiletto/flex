@@ -42,11 +42,12 @@ class Urdf2Moon:
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.u_hat_opt = self.nlp_solver(self.initial_cond, self.final_term_cost, 
-                                         self.upper_x, self.lower_x, self.upper_u, self.lower_u, self.traj, self.traj_dot)
-        self.x_opt = self.get_x_opt(self.F, self.u_hat_opt, self.initial_cond)
-        
-    
+        self.nlp_solver(self.initial_cond, self.final_term_cost, 
+                        self.upper_x, self.lower_x, self.upper_u, self.lower_u, self.traj, self.traj_dot)
+        self.u_opt = self.u_function(self.u_hat_opt, self.x_opt[0:self.num_joints])
+        return {'q': self.x_opt, 'qd': self.x_dot_opt, 
+                'u': self.u_opt, 'u_hat': self.u_hat_opt}
+
     def define_symbolic_vars(self, num_joints):
         q = cs.SX.sym("q", num_joints)
         q_dot = cs.SX.sym("q_dot", num_joints)
@@ -66,10 +67,10 @@ class Urdf2Moon:
         M_sym = self.robot_parser.get_inertia_matrix_crba(root, tip)
         # load gravity terms (function)
         gravity_u2c = [0, 0, -9.81]
-        G_sym = self.robot_parser.get_gravity_rnea(root, tip, gravity_u2c)
+        self.G_sym = self.robot_parser.get_gravity_rnea(root, tip, gravity_u2c)
         # load Coriolis terms (function)
         C_sym = self.robot_parser.get_coriolis_rnea(root, tip)
-        return M_sym(q), C_sym(q, q_dot), G_sym(q)
+        return M_sym(q), C_sym(q, q_dot), self.G_sym(q)
 
     def get_diff_eq(self, cost_func, traj):
         self.t = cs.SX.sym("t", 1) #let's define time
@@ -112,70 +113,91 @@ class Urdf2Moon:
         return F
     def nlp_solver(self, initial_cond, final_term_cost, upper_x, lower_x, upper_u, lower_u, traj, traj_dot):
         # Start with an empty NLP
-        u       = []    #input vector
-        u_g     = []    #initial guess
-        lbu     = []    #lower bounds of inputs
-        ubu     = []    #upper bounds of inputs 
+        w       = []    #input vector
+        w_g     = []    #initial guess
+        lbw     = []    #lower bounds of inputs
+        ubw     = []    #upper bounds of inputs 
         J       = 0     #initial value of cost func
         g       = []    #joint state for all timesteps
-        lbx     = []    #lower bounds of states
-        ubx     = []    #upper bound of states
+        lbg     = []    #lower bounds of states
+        ubg     = []    #upper bound of states
 
-        #populating most of them
-        for k in range(self.N):
-            u_g  += [0] * self.num_joints   # Initial guess for every timestamp
-            lbu += lower_u            # lower limit for control
-            ubu += upper_u               # upper limit for control
-            lbx += lower_x
-            ubx += upper_x
 
-        Xk = cs.MX(initial_cond) # MUST be coherent with the condition specified abow
-        
+        Xk = cs.MX.sym('X0', self.num_joints*2) # MUST be coherent with the condition specified abow
+        w += [Xk]
+        w_g  += initial_cond
+        lbw += initial_cond
+        ubw += initial_cond
         # Integration!
         dt = self.T/self.N
         for k in range(self.N):
+            # New NLP variable for the control
             Uk = cs.MX.sym('U_' + str(k), self.num_joints) # generate the k-th control command, 2x1 dimension
-            u += [Uk]        # list of commands [U_0, U_1, ..., U_(N-1)]
-
+            w += [Uk]        # list of commands [U_0, U_1, ..., U_(N-1)]
+            w_g += [0] * self.num_joints  # initial guess
+            
+            # Add inequality constraint on inputs
+            lbw += lower_u       # lower bound on q
+            ubw += upper_u       # upper bound on q
+            
+            # Integrate till the end of the interval
             Fk = self.F(x0=Xk, p=Uk, time=dt*k)     #That's the actual integration!
-            Xk = Fk['xf']
+            Xk_end = Fk['xf']
             J  = J+Fk['qf']
     
-            # Add inequality constraint
-            g.append(Xk[0:self.num_joints])    # g += [x_1, x_2, x_1d, x_2d]
+            # New NLP variable for state at end of interval
+            Xk = cs.MX.sym('X_' + str(k+1), 2*self.num_joints)
+            w  += [Xk]
+            w_g += [0] * (2*self.num_joints) # initial guess
+            
+            # Add inequality constraint on inputs
+            lbw += lower_x       # lower bound on q
+            lbw += [-cs.inf] * self.num_joints #lower bound on q_dot
+            ubw += upper_x       # upper bound on q
+            ubw += [cs.inf]  * self.num_joints # upper bound on q_dot
 
+            # Add equality constraint
+            g   += [Xk_end-Xk]
+            lbg += [0] * (2*self.num_joints)
+            ubg += [0] * (2*self.num_joints)
+    
         # add a final term cost. If not specified is 0.
         if final_term_cost != None:
-            J = J+final_term_cost(Xk[0:self.num_joints]-traj(self.T), Xk[self.num_joints:]-traj_dot(self.T), Uk) # f_t_c(q, qd, u)    
+            J = J+final_term_cost(Xk_end[0:self.num_joints]-traj(self.T), Xk_end[self.num_joints:]-traj_dot(self.T), Uk) # f_t_c(q, qd, u)    
             
         # Define the problem to be solved
-        problem = {'f': J, 'x': cs.vertcat(*u), 'g': cs.vertcat(*g)}
+        problem = {'f': J, 'x': cs.vertcat(*w), 'g': cs.vertcat(*g)}
         # NLP solver options
         opts = {}
-        opts["ipopt"] = dict(max_iter=100)
+        opts["ipopt"] = {'max_iter': 100}
         # Define the solver and add boundary conditions
         solver = cs.nlpsol('solver', 'ipopt', problem, opts)
-        solver = solver(x0=u_g, lbx=lbu, ubx=ubu, lbg=lbx, ubg=ubx)
+        solver = solver(x0=w_g, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
 
         # Solve the NLP
-        u_hat_opt = solver['x']
-        return u_hat_opt
-    def get_x_opt(self, F, u, initial_cond):
-        x_opt = [np.array(initial_cond)]    # must be the same as before!
-        for k in range(self.N):
-            u_t = cs.vertcat(u[k*self.num_joints:(k+1)*self.num_joints])
-            Fk = F(x0=x_opt[-1], p=u_t)
-            x_opt += [Fk['xf'].full()]
-            
-        # now we want x_res = [q1,q2,q1_dot, q2_dot]    
-        x_res = [np.array([r[k] for r in x_opt], dtype='f') for k in range(2*self.num_joints)]
-        return x_res
+        opt = solver['x']
+        self.x_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
+        self.x_dot_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
+        self.u_hat_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
+
+    
     def derive_trajectory(self, traj, t):
         traj_dot_list = [cs.jacobian(traj(t)[idx],t) for idx in range(self.num_joints)]
         traj_sx = cs.vertcat(*traj(t))
         traj_dot_sx = cs.vertcat(*traj_dot_list)
         traj_dot = cs.Function('traj_dot', [t], [traj_dot_sx], ['t'], ['traj_dot'])
         return traj_sx, traj_dot_sx, traj_dot
+    def u_function(self, u_hat_opt, x_opt): # function that returns the value of u = u_hat + G(q)
+        g_opt = []
+        for k in range(self.N): # for every simulation instant
+            x_opt_list = [x_opt[idx][k] for idx in range(self.num_joints)] # list q0, q1, ..., q_n at k-th instant
+            x_t = cs.vertcat(*x_opt_list) # 
+            gk = self.G_sym(x_t) # evaluate G(q) at k-th instant
+            g_opt += [gk.full()] # save G(q) in a list like [G0(0) G1(0) G0(1) G1(1)]
+            
+        g_opt_flat = [item for sublist in g_opt for item in sublist]
+        g_opt_list = [g_opt_flat[idx::self.num_joints]for idx in range(self.num_joints)]
+        return g_opt_list + u_hat_opt
 
     def print_results(self):
         tgrid = [self.T/self.N*k for k in range(self.N+1)]
@@ -187,32 +209,36 @@ class Urdf2Moon:
 
         return fig    
     def get_ax(self, ax, idx, tgrid):
-        ax.plot(tgrid, self.x_opt[idx], '-')
-        ax.plot(tgrid, self.x_opt[self.num_joints+idx], '--')
-        ax.plot(tgrid[1:], self.u_hat_opt[idx::self.num_joints], '-.')
-        ax.legend(['q'+str(idx),'q' + str(idx) +'_dot', 'u' + str(idx)])
+        n = self.num_joints
+        ax.plot(tgrid, self.x_opt[idx], '--')
+        ax.plot(tgrid, self.x_dot_opt[idx], '--')
+        ax.plot(tgrid[1:], self.u_hat_opt[idx], '-.')
+        ax.plot(tgrid[1:], self.u_opt[idx], '-.')
+        ax.legend(['q'+str(idx),'q' + str(idx) +'_dot', 'u' + str(idx)+'_hat', 'u' + str(idx)])
         return ax
         
 
 if __name__ == '__main__':
-    urdf_path = "../urdf/rrbot.urdf"
+    urdf_path = "urdf/rrbot.urdf"
     root = "link1" 
     end = "link3"
 
     def my_cost_func(q, qd, u):
-        return 10*cs.mtimes(q.T,q) + cs.mtimes(qd.T,qd) + cs.mtimes(u.T,u)/10
+        return 100*cs.mtimes(q.T,q) + cs.mtimes(qd.T,qd) + cs.mtimes(u.T,u)/10
 
     def my_final_term_cost(q_f, qd_f, u_f):
-        return 0.1*(10*cs.mtimes(q_f.T,q_f) + cs.mtimes(qd_f.T,qd_f))
+        return 10*cs.mtimes(q_f.T,q_f)  #+ cs.mtimes(qd_f.T,qd_f)
     
     def trajectory_target(t):
-        q = [t*0.1, t*0.1]
+        q = [0.1, 0.1]
+        q = [1*t, -1*t]
+        q = [cs.cos(t), cs.sin(t)]
         return q
 
-    time_horizon = 5
-    steps = 100
-    in_cond = [1,1,0,0]
+    time_horizon = 10
+    steps = 400
+    in_cond = [1.1,0.1,0.1,1.1]
 
     urdf_2_opt = Urdf2Moon(urdf_path, root, end)
-    urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target)
-    urdf_2_opt.print_results()
+    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost)
+    fig = urdf_2_opt.print_results()
