@@ -3,6 +3,7 @@ import casadi as cs
 from urdf2casadi import urdfparser as u2c
 import numpy as np
 import matplotlib.pyplot as plt
+from math import ceil
 
 
 class Urdf2Moon:
@@ -19,9 +20,9 @@ class Urdf2Moon:
         self.M, self.Cq, self.G = self.get_motion_equation_matrix()
         self.M_inv = cs.pinv(self.M)
         self.u_hat = self.u - self.G
-        self.upper_q, self.lower_q = self.get_limits()
+        self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
 
-    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, max_effort=None, max_velocity=None, rk_interval=4, max_iter=100):
+    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, rk_interval=4, max_iter=250):
         #Store Values
         self.cost_func = cost_func
         self.final_term_cost = final_term_cost
@@ -37,8 +38,8 @@ class Urdf2Moon:
         
 
         # Fix boundaries if not given
-        self.upper_u, self.lower_u = self.format_properly(max_effort)
-        self.upper_qd, self.lower_qd = self.format_properly(max_velocity)
+        self.upper_u, self.lower_u = self.format_properly(self.max_effort)
+        self.upper_qd, self.lower_qd = self.format_properly(self.max_velocity)
 
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
@@ -66,10 +67,13 @@ class Urdf2Moon:
         self.G_sym = self.robot_parser.get_gravity_rnea(self.root, self.tip, gravity_u2c)
         # load Coriolis terms (function)
         self.C_sym = self.robot_parser.get_coriolis_rnea(self.root, self.tip)
+        # load frictional matrixes
+        self.Ff, self.Fd = self.robot_parser.get_friction_matrixes(self.root, self.tip)
         return self.M_sym(self.q), self.C_sym(self.q, self.q_dot), self.G_sym(self.q)
     def get_limits(self):
         _, _, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
-        return upper_q, lower_q
+        max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
+        return upper_q, lower_q, max_effort, max_velocity
 
     def format_properly(self, item):
         if item == None:
@@ -86,19 +90,19 @@ class Urdf2Moon:
             lower = [-item] * self.num_joints
         else:
             raise ValueError('Input should be a number or a list of numbers')
-
         return upper, lower
+
     def get_diff_eq(self, cost_func, traj):
         self.t = cs.SX.sym("t", 1) #let's define the time
 
-        lhs1 = self.q_dot
-        lhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, self.u_hat)
+        rhs1 = self.q_dot
+        rhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, (self.u_hat - cs.mtimes(self.Fd, self.q_dot)- cs.mtimes(self.Ff, cs.sign(self.q_dot))))
         
         self.tr, self.tr_d, self.traj_dot = self.derive_trajectory(traj, self.t)
         J_dot = cost_func(self.q-self.tr, self.q_dot-self.tr_d, self.u)
         
         self.x = cs.vertcat(self.q, self.q_dot)
-        self.x_dot = cs.vertcat(lhs1, lhs2)
+        self.x_dot = cs.vertcat(rhs1, rhs2)
         f = cs.Function('f', [self.x, self.u, self.t],    # inputs
                              [self.x_dot, J_dot])  # outputs
         return f
@@ -220,7 +224,7 @@ class Urdf2Moon:
         
 
 if __name__ == '__main__':
-    urdf_path = "urdf/rrbot.urdf"
+    urdf_path = "urdf/rrbot2.urdf"
     root = "link1" 
     end = "link3"
 
