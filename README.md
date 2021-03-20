@@ -13,7 +13,8 @@ Things to do:
 - [x] Fix Latex Mathematical Modeling
 - [x] Reconstruct the actual optimal input
 - [ ] Easy UI for algebric constraints
-- [ ] Friction and Damping modeling
+- [x] Friction and Damping modeling
+- [x] URDF parsing to get joint stiffness
 - [ ] Control over trajectory derivative
 - [ ] Installation Guide
 - [ ] Update LaTeX
