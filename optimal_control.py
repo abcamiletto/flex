@@ -19,7 +19,6 @@ class Urdf2Moon:
         self.define_symbolic_vars()
         self.M, self.Cq, self.G = self.get_motion_equation_matrix()
         self.M_inv = cs.pinv(self.M)
-        self.u_hat = self.u - self.G
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
 
     def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, rk_interval=4, max_iter=250):
@@ -96,7 +95,7 @@ class Urdf2Moon:
         self.t = cs.SX.sym("t", 1) #let's define the time
 
         rhs1 = self.q_dot
-        rhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, (self.u_hat - cs.mtimes(self.Fd, self.q_dot)- cs.mtimes(self.Ff, cs.sign(self.q_dot))))
+        rhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, (self.u -self.G - cs.mtimes(self.Fd, self.q_dot)- cs.mtimes(self.Ff, cs.sign(self.q_dot))))
         
         self.tr, self.tr_d, self.traj_dot = self.derive_trajectory(traj, self.t)
         J_dot = cost_func(self.q-self.tr, self.q_dot-self.tr_d, self.u)
@@ -224,7 +223,7 @@ class Urdf2Moon:
         
 
 if __name__ == '__main__':
-    urdf_path = "urdf/rrbot2.urdf"
+    urdf_path = "urdf/rrbot.urdf"
     root = "link1" 
     end = "link3"
 
