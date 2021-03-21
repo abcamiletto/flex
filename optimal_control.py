@@ -198,7 +198,7 @@ class Urdf2Moon:
         self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
         self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
 
-    def derive_trajectory(traj, t):
+    def derive_trajectory(self, traj, t):
         if isinstance(traj(t)[0], list): # If user gave also traj_dot as input then
             traj_dot = cs.vertcat(*traj(t)[1])
             traj = cs.vertcat(*traj(t)[0])
