@@ -29,6 +29,7 @@ TODO
 Second Round
 
 - [ ] Easy UI for algebric constraints
+- [x] Auto Parsing of *max_velocity* and *max_effort*
 - [x] Friction and Damping modeling --- *numerical problems*
 - [x] URDF parsing to get joint stiffness 
 - [x] Control over trajectory derivative
