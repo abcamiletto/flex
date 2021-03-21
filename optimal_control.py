@@ -23,11 +23,12 @@ class Urdf2Moon:
 
     def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, rk_interval=4, max_iter=250):
         #Store Values
+        self.t = cs.SX.sym("t", 1)
+        self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
         self.cost_func = cost_func
         self.final_term_cost = final_term_cost
         self.T = time_horizon
         self.N = control_steps
-        self.traj = trajectory_target
         self.rk_intervals = rk_interval
         self.max_iter = max_iter
         if len(initial_cond) == 2*self.num_joints:
@@ -43,7 +44,7 @@ class Urdf2Moon:
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.nlp_solver(self.initial_cond, self.final_term_cost,  self.traj, self.traj_dot)
+        self.nlp_solver(self.initial_cond, self.final_term_cost)
         return {'q': self.q_opt, 'qd': self.qd_opt, 
                 'u': self.u_opt}
 
@@ -84,7 +85,7 @@ class Urdf2Moon:
                 lower = [-x for x in item]
             else:
                 raise ValueError('List lenght does not match the number of joints! It should be long {}'.format(self.num_joints))
-        elif isinstance(max_effort, (int, float)):
+        elif isinstance(item, (int, float)):
             upper = [item] * self.num_joints
             lower = [-item] * self.num_joints
         else:
@@ -92,13 +93,10 @@ class Urdf2Moon:
         return upper, lower
 
     def get_diff_eq(self, cost_func, traj):
-        self.t = cs.SX.sym("t", 1) #let's define the time
-
         rhs1 = self.q_dot
         rhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, (self.u -self.G - cs.mtimes(self.Fd, self.q_dot)- cs.mtimes(self.Ff, cs.sign(self.q_dot))))
         
-        self.tr, self.tr_d, self.traj_dot = self.derive_trajectory(traj, self.t)
-        J_dot = cost_func(self.q-self.tr, self.q_dot-self.tr_d, self.u)
+        J_dot = cost_func(self.q-self.traj, self.q_dot-self.traj_dot, self.u)
         
         self.x = cs.vertcat(self.q, self.q_dot)
         self.x_dot = cs.vertcat(rhs1, rhs2)
@@ -130,7 +128,7 @@ class Urdf2Moon:
 
         F = cs.Function('F', [X0, U, t], [X, Q],['x0','p', 'time'],['xf','qf'])
         return F
-    def nlp_solver(self, initial_cond, final_term_cost, traj, traj_dot):
+    def nlp_solver(self, initial_cond, final_term_cost):
         # Start with an empty NLP
         w       = []    #input vector
         w_g     = []    #initial guess
@@ -140,7 +138,9 @@ class Urdf2Moon:
         g       = []    #joint state for all timesteps
         lbg     = []    #lower bounds of states
         ubg     = []    #upper bound of states
-
+        
+        self.t = cs.MX.sym("t", 1)
+        self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
         Xk = cs.MX.sym('X0', self.num_joints*2) # MUST be coherent with the condition specified abow
         w += [Xk]
         w_g  += initial_cond
@@ -181,7 +181,7 @@ class Urdf2Moon:
     
         # add a final term cost. If not specified is 0.
         if final_term_cost != None:
-            J = J+final_term_cost(Xk_end[0:self.num_joints]-traj(self.T), Xk_end[self.num_joints:]-traj_dot(self.T), Uk) # f_t_c(q, qd, u)    
+            J = J+final_term_cost(Xk_end[0:self.num_joints]-cs.substitute(self.traj,self.t,self.T), Xk_end[self.num_joints:]-cs.substitute(self.traj_dot,self.t,self.T), Uk) # f_t_c(q, qd, u)    
             
         # Define the problem to be solved
         problem = {'f': J, 'x': cs.vertcat(*w), 'g': cs.vertcat(*g)}
@@ -198,23 +198,26 @@ class Urdf2Moon:
         self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
         self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
 
-    def derive_trajectory(self, traj, t):
-        traj_dot_list = [cs.jacobian(traj(t)[idx],t) for idx in range(self.num_joints)]
-        traj_sx = cs.vertcat(*traj(t))
-        traj_dot_sx = cs.vertcat(*traj_dot_list)
-        traj_dot = cs.Function('traj_dot', [t], [traj_dot_sx], ['t'], ['traj_dot'])
-        return traj_sx, traj_dot_sx, traj_dot
+    def derive_trajectory(traj, t):
+        if isinstance(traj(t)[0], list): # If user gave also traj_dot as input then
+            traj_dot = cs.vertcat(*traj(t)[1])
+            traj = cs.vertcat(*traj(t)[0])
+        else:
+            traj_dot = [cs.jacobian(traj(t)[idx],t) for idx in range(7)] # If user did not give traj_dot, then derive it from traj
+            traj = cs.vertcat(*traj(t))
+            traj_dot = cs.vertcat(*traj_dot)
+        return traj, traj_dot
     def print_results(self):
         tgrid = [self.T/self.N*k for k in range(self.N+1)]
 
         fig, axes = plt.subplots(nrows=ceil(self.num_joints/2), ncols=2, figsize=(15, 4*ceil(self.num_joints/2)))
         
         for idx, ax in enumerate(fig.axes):
-            self.get_ax(ax, idx, tgrid)
+            if idx < self.num_joints:
+                self.get_ax(ax, idx, tgrid)
 
         return fig    
     def get_ax(self, ax, idx, tgrid):
-        n = self.num_joints
         ax.plot(tgrid, self.q_opt[idx], '--')
         ax.plot(tgrid, self.qd_opt[idx], '--')
         ax.plot(tgrid[1:], self.u_opt[idx], '-.')
@@ -223,25 +226,33 @@ class Urdf2Moon:
         
 
 if __name__ == '__main__':
-    urdf_path = "urdf/rrbot.urdf"
-    root = "link1" 
-    end = "link3"
+    if False:
+        urdf_path = "urdf/rrbot.urdf"
+        root = "link1" 
+        end = "link3"
+        def trajectory_target(t):
+            q = [0]*2
+            return q
+        in_cond = [1]*4
+    else:
+        urdf_path = "urdf/panda2.urdf"
+        root = "panda_link0" 
+        end = "panda_link8"
+        def trajectory_target(t):
+            q = [0]*7
+            return q
+        in_cond = [0,-0.78,0,-2.36,0,1.57,0.78] + [0.1]*7
 
     def my_cost_func(q, qd, u):
-        return 100*cs.mtimes(q.T,q) + cs.mtimes(qd.T,qd) + cs.mtimes(u.T,u)/10
+        return cs.mtimes(q.T,q)
 
     def my_final_term_cost(q_f, qd_f, u_f):
         return 10*cs.mtimes(q_f.T,q_f)  #+ cs.mtimes(qd_f.T,qd_f)
     
-    def trajectory_target(t):
-        q = [0, 0]
-        return q
 
-    time_horizon = 2
-    steps = 20
-    in_cond = [1,1,0,1]
+    time_horizon = 1
+    steps = 50
 
     urdf_2_opt = Urdf2Moon(urdf_path, root, end)
-    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost)
+    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost, max_iter=70)
     fig = urdf_2_opt.print_results()
-
