@@ -11,7 +11,7 @@ We suppose you have already installed ROS in your system, but it should work any
 Since we have yet to make this package "pip installable" you need to import in your python code manually, by having the optimal_control.py in the same folder of your python code or by adding its path to the interpreter.
 
 ## Example of usage
-```
+```python
 import optimal_control as OC
 
 # URDF options
