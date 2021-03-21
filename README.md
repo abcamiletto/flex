@@ -14,7 +14,8 @@ Since we have yet to make this package "pip installable" you need to import in y
 TODO
 
 
-Things to do:
+### Things to do:
+
 - [x] Indipendence to number of joints
 - [x] Joint limits from URDF
 - [x] Reference point different from origin
