@@ -26,7 +26,7 @@ TODO
 - [x] Fix Latex Mathematical Modeling
 - [x] Reconstruct the actual optimal input
 
-**Second Round**
+Second Round
 
 - [ ] Easy UI for algebric constraints
 - [x] Friction and Damping modeling --- *numerical problems*
