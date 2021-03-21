@@ -25,7 +25,9 @@ TODO
 - [x] Check sparse Hessian *problem*
 - [x] Fix Latex Mathematical Modeling
 - [x] Reconstruct the actual optimal input
+
 **Second Round**
+
 - [ ] Easy UI for algebric constraints
 - [x] Friction and Damping modeling --- *numerical problems*
 - [x] URDF parsing to get joint stiffness 
