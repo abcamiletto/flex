@@ -15,7 +15,6 @@ Since we have yet to make this package "pip installable" you need to import in y
 import optimal_control as OC
 
 # URDF options
-
 urdf_path = 'urdf/rrbot.urdf'
 root = 'link1'
 end = 'link3'
@@ -23,7 +22,6 @@ end = 'link3'
 
 # The trajectory in respect we want to minimize the cost function
 # If qdot isn't given, it will be obtained with differentiation from q
-
 def trajectory_target(t):
     q = [t] * 2
     qdot = [0] * 2
@@ -31,33 +29,27 @@ def trajectory_target(t):
 
 
 # Our cost function
-
 def my_cost_func(q, qd, u):
     return cs.mtimes(q.T, q) + cs.mtimes(u.T, u) / 100
 
 
 # Our final term to be added at the end to our cost function
-
 def my_final_term_cost(q_f, qd_f, u_f):
     return 10 * cs.mtimes(q_f.T, q_f)
 
 
 # Initial Condition in terms of q, qdot
-
 in_cond = [1] * 2 + 0 * [2]
 
 # Optimization parameters
-
 time_horizon = 1
 steps = 50
 
 # Load the urdf and calculate the differential equations
-
 urdf_opt = OC.Urdf2Moon(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
-
 opt = urdf_opt.solve(
     my_cost_func,
     time_horizon,
@@ -69,7 +61,6 @@ opt = urdf_opt.solve(
     )
 
 # Print the results!
-
 fig = urdf_opt.print_results()
 fig.show()
 ```
