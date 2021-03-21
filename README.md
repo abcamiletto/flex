@@ -33,6 +33,6 @@ Second Round
 - [x] Friction and Damping modeling --- *numerical problems*
 - [x] URDF parsing to get joint stiffness 
 - [x] Control over trajectory derivative
-- [ ] Installation Guide
+- [x] Installation Guide
 - [ ] Update LaTeX
 
