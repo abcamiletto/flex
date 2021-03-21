@@ -34,5 +34,5 @@ Second Round
 - [x] URDF parsing to get joint stiffness 
 - [x] Control over trajectory derivative
 - [x] Installation Guide
-- [ ] Update LaTeX
+- [x] Update LaTeX
 
