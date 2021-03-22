@@ -65,8 +65,8 @@ opt = urdf_opt.solve(
     in_cond,
     trajectory_target,
     my_final_term_cost,
-    my_constraints
-    max_iter=70,
+    my_constraints,
+    max_iter=70
     )
 
 # Print the results!
