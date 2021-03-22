@@ -37,6 +37,14 @@ def my_cost_func(q, qd, u):
 def my_final_term_cost(q_f, qd_f, u_f):
     return 10 * cs.mtimes(q_f.T, q_f)
 
+# Additional Constraints i may want to set
+def my_constraint1(q, q_dot, u, ee_pos):
+    return [-10, -10], u, [10, 10]
+def my_constraint2(q, q_dot, u, ee_pos):
+    return [-4, -4], q_dot, [4, 4]
+def my_constraint3(q, q_dot, u, ee_pos):
+    return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
+my_constraints=[my_constraint1, my_constraint2, my_constraint3]
 
 # Initial Condition in terms of q, qdot
 in_cond = [1] * 2 + 0 * [2]
@@ -57,6 +65,7 @@ opt = urdf_opt.solve(
     in_cond,
     trajectory_target,
     my_final_term_cost,
+    my_constraints
     max_iter=70,
     )
 
@@ -80,7 +89,7 @@ fig.show()
 
 Second Round
 
-- [ ] Easy UI for algebric constraints
+- [x] Easy UI for algebric constraints
 - [x] Auto Parsing of *max_velocity* and *max_effort*
 - [x] Friction and Damping modeling --- *numerical problems*
 - [x] URDF parsing to get joint stiffness 
@@ -88,4 +97,5 @@ Second Round
 - [x] Installation Guide
 - [x] Code Guide 
 - [x] Update LaTeX
+- [ ] SAE modeling
 

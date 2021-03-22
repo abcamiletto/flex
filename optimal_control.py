@@ -18,15 +18,17 @@ class Urdf2Moon:
         self.num_joints = self.get_joints_n()
         self.define_symbolic_vars()
         self.M, self.Cq, self.G = self.get_motion_equation_matrix()
+        self.ee_pos = self.get_forward_kinematics()
         self.M_inv = cs.pinv(self.M)
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
 
-    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, rk_interval=4, max_iter=250):
+    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, my_constraint=None, rk_interval=4, max_iter=250):
         #Store Values
         self.t = cs.SX.sym("t", 1)
         self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
         self.cost_func = cost_func
         self.final_term_cost = final_term_cost
+        self.my_constraint = my_constraint
         self.T = time_horizon
         self.N = control_steps
         self.rk_intervals = rk_interval
@@ -44,7 +46,7 @@ class Urdf2Moon:
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.nlp_solver(self.initial_cond, self.final_term_cost)
+        self.nlp_solver(self.initial_cond, self.final_term_cost, self.my_constraint)
         return {'q': self.q_opt, 'qd': self.qd_opt, 
                 'u': self.u_opt}
 
@@ -59,6 +61,7 @@ class Urdf2Moon:
         self.q = cs.SX.sym("q", self.num_joints)
         self.q_dot = cs.SX.sym("q_dot", self.num_joints)
         self.u = cs.SX.sym("u", self.num_joints) 
+        self.ee = cs.SX.sym("ee", 1)
     def get_motion_equation_matrix(self):
         # load inertia terms (function)
         self.M_sym = self.robot_parser.get_inertia_matrix_crba(self.root, self.tip)
@@ -67,9 +70,16 @@ class Urdf2Moon:
         self.G_sym = self.robot_parser.get_gravity_rnea(self.root, self.tip, gravity_u2c)
         # load Coriolis terms (function)
         self.C_sym = self.robot_parser.get_coriolis_rnea(self.root, self.tip)
-        # load frictional matrixes
-        self.Ff, self.Fd = self.robot_parser.get_friction_matrixes(self.root, self.tip)
+        # load frictional matrices
+        self.Ff, self.Fd = self.robot_parser.get_friction_matrices(self.root, self.tip)
         return self.M_sym(self.q), self.C_sym(self.q, self.q_dot), self.G_sym(self.q)
+    def get_forward_kinematics(self):
+        fk_dict = self.robot_parser.get_forward_kinematics(self.root, self.tip)
+        dummy_sym = cs.MX.sym('dummy', self.num_joints)
+        FK_sym = fk_dict["T_fk"] # ee position
+        ee = FK_sym(dummy_sym)[0:3,3]
+        ee_pos = cs.Function('ee_pos', [dummy_sym], [ee])
+        return ee_pos
     def get_limits(self):
         _, _, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
@@ -128,7 +138,7 @@ class Urdf2Moon:
 
         F = cs.Function('F', [X0, U, t], [X, Q],['x0','p', 'time'],['xf','qf'])
         return F
-    def nlp_solver(self, initial_cond, final_term_cost):
+    def nlp_solver(self, initial_cond, final_term_cost, my_constraints):
         # Start with an empty NLP
         w       = []    #input vector
         w_g     = []    #initial guess
@@ -178,6 +188,12 @@ class Urdf2Moon:
             g   += [Xk_end-Xk]
             lbg += [0] * (2*self.num_joints)
             ubg += [0] * (2*self.num_joints)
+            
+            # get forward kinematics
+            EEk_pos = self.ee_pos(Xk[0:self.num_joints])
+            # add custom constraints
+            if my_constraints != None:
+                self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, my_constraints)
     
         # add a final term cost. If not specified is 0.
         if final_term_cost != None:
@@ -198,19 +214,29 @@ class Urdf2Moon:
         self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
         self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
 
+    def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_,  my_constraints_):
+        for constraint in my_constraints_:
+            l_bound, f_bound, u_bound = constraint(Xk_[0:self.num_joints], Xk_[self.num_joints:], Uk_, EEk_pos_)
+            if not isinstance(f_bound, list): f_bound = [f_bound]
+            if not isinstance(l_bound, list): l_bound = [l_bound]
+            if not isinstance(u_bound, list): u_bound = [u_bound]
+            g_   += f_bound
+            lbg_ += l_bound
+            ubg_ += u_bound
+            
     def derive_trajectory(self, traj, t):
         if isinstance(traj(t)[0], list): # If user gave also traj_dot as input then
             traj_dot = cs.vertcat(*traj(t)[1])
             traj = cs.vertcat(*traj(t)[0])
         else:
-            traj_dot = [cs.jacobian(traj(t)[idx],t) for idx in range(7)] # If user did not give traj_dot, then derive it from traj
+            traj_dot = [cs.jacobian(traj(t)[idx],t) for idx in range(self.num_joints)] # If user did not give traj_dot, then derive it from traj
             traj = cs.vertcat(*traj(t))
             traj_dot = cs.vertcat(*traj_dot)
         return traj, traj_dot
     def print_results(self):
         tgrid = [self.T/self.N*k for k in range(self.N+1)]
 
-        fig, axes = plt.subplots(nrows=ceil(self.num_joints/2), ncols=2, figsize=(15, 4*ceil(self.num_joints/2)))
+        fig, axes = plt.subplots(nrows=int(ceil(self.num_joints/2)), ncols=2, figsize=(15, 4*ceil(self.num_joints/2)))
         
         for idx, ax in enumerate(fig.axes):
             if idx < self.num_joints:
@@ -225,17 +251,18 @@ class Urdf2Moon:
         return ax
         
 
+
 if __name__ == '__main__':
-    if False:
-        urdf_path = "urdf/rrbot.urdf"
+    if True:
+        urdf_path = "./urdf/rrbot.urdf"
         root = "link1" 
         end = "link3"
         def trajectory_target(t):
-            q = [0]*2
+            q = [3.14, 0]
             return q
-        in_cond = [1]*4
+        in_cond = [0]*4
     else:
-        urdf_path = "urdf/panda2.urdf"
+        urdf_path = "./urdf/panda.urdf"
         root = "panda_link0" 
         end = "panda_link8"
         def trajectory_target(t):
@@ -244,15 +271,23 @@ if __name__ == '__main__':
         in_cond = [0,-0.78,0,-2.36,0,1.57,0.78] + [0.1]*7
 
     def my_cost_func(q, qd, u):
-        return cs.mtimes(q.T,q)
+        return 10 * cs.mtimes(q.T,q) + cs.mtimes(u.T,u) / 10
 
     def my_final_term_cost(q_f, qd_f, u_f):
         return 10*cs.mtimes(q_f.T,q_f)  #+ cs.mtimes(qd_f.T,qd_f)
     
+        
+    def my_constraint1(q, q_dot, u, ee_pos):
+        return [-10, -10], u, [10, 10]
+    def my_constraint2(q, q_dot, u, ee_pos):
+        return [-4, -4], q_dot, [4, 4]
+    def my_constraint3(q, q_dot, u, ee_pos):
+        return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
+    my_constraints=[my_constraint1, my_constraint2, my_constraint3]
 
     time_horizon = 1
     steps = 50
 
     urdf_2_opt = Urdf2Moon(urdf_path, root, end)
-    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost, max_iter=70)
+    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost, my_constraints)
     fig = urdf_2_opt.print_results()
