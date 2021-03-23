@@ -1,4 +1,4 @@
-# URDF2OptimalControl
+# From URDF to Optimal Control
 Here we offer an easy to use library that allows you to do optimal control of a given robot, via urdf.
 The optimal control we offer is based on a trajectory target in fixed time.
 
