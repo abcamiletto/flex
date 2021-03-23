@@ -9,7 +9,7 @@ setup(
     version=VERSION,
     author="Andrea Boscolo Camiletto",
     author_email="<abcamiletto@gmail.com>",
-    url="https://github.com/abcamiletto/urdf-optcontrol",
+    url="https://github.com/abcamiletto/urdf_optcontrol",
     description=DESCRIPTION,
     packages=find_packages(),
     install_requires=['casadi', 'urdf2casadi', 'numpy', 'matplotlib'],
