@@ -89,7 +89,7 @@ fig.show()
 
 Second Round
 
-- [x] Easy UI for algebric constraints
+- [x] Easy UI for algebraic constraints
 - [x] Auto Parsing of *max_velocity* and *max_effort*
 - [x] Friction and Damping modeling --- *numerical problems*
 - [x] URDF parsing to get joint stiffness 
