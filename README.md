@@ -13,6 +13,7 @@ Since we have yet to make this package "pip installable" you need to import in y
 ## Example of usage
 ```python
 import optimal_control as OC
+import casadi as cs
 
 # URDF options
 urdf_path = 'urdf/rrbot.urdf'
@@ -22,16 +23,14 @@ end = 'link3'
 
 # The trajectory in respect we want to minimize the cost function
 # If qdot isn't given, it will be obtained with differentiation from q
-def trajectory_target(t):
+def trajectory_target_(t):
     q = [t] * 2
     qdot = [0] * 2
     return (q, qdot)
 
-
 # Our cost function
 def my_cost_func(q, qd, u):
     return cs.mtimes(q.T, q) + cs.mtimes(u.T, u) / 100
-
 
 # Our final term to be added at the end to our cost function
 def my_final_term_cost(q_f, qd_f, u_f):
@@ -46,8 +45,9 @@ def my_constraint3(q, q_dot, u, ee_pos):
     return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
 my_constraints=[my_constraint1, my_constraint2, my_constraint3]
 
+
 # Initial Condition in terms of q, qdot
-in_cond = [1] * 2 + 0 * [2]
+in_cond = [1] * 2 + [0] * 2
 
 # Optimization parameters
 time_horizon = 1
@@ -63,7 +63,7 @@ opt = urdf_opt.solve(
     time_horizon,
     steps,
     in_cond,
-    trajectory_target,
+    trajectory_target_,
     my_final_term_cost,
     my_constraints,
     max_iter=70

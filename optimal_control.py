@@ -46,7 +46,7 @@ class Urdf2Moon:
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.nlp_solver(self.initial_cond, self.final_term_cost, self.my_constraint)
+        self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
         return {'q': self.q_opt, 'qd': self.qd_opt, 
                 'u': self.u_opt}
 
@@ -138,7 +138,7 @@ class Urdf2Moon:
 
         F = cs.Function('F', [X0, U, t], [X, Q],['x0','p', 'time'],['xf','qf'])
         return F
-    def nlp_solver(self, initial_cond, final_term_cost, my_constraints):
+    def nlp_solver(self, initial_cond, final_term_cost, trajectory_target, my_constraints):
         # Start with an empty NLP
         w       = []    #input vector
         w_g     = []    #initial guess
