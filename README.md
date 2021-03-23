@@ -18,7 +18,8 @@ sudo ./install.sh
 1. Get CasADi: `pip install casadi`
 2. Clone our version of urdf2casadi `git clone https://github.com/abcamiletto/urdf2casadi-light.git`
 3. Inside it, install the package `pip install .`
-4. Clone this repo and do like point 3.
+4. Clone this repo `git clone https://github.com/abcamiletto/urdf_optcontrol.git`
+5. Inside it, install the package `pip install .`
 
 ## Example of usage
 ```python
