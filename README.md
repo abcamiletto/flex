@@ -14,6 +14,8 @@ cd urdf_optcontrol
 sudo ./install.sh
 ```
 
+To see if it's working, run the python file in the example folder
+
 #### "Hard" Guide
 1. Get CasADi: `pip install casadi`
 2. Clone our version of urdf2casadi `git clone https://github.com/abcamiletto/urdf2casadi-light.git`
