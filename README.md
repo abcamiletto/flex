@@ -4,6 +4,17 @@ The optimal control we offer is based on a trajectory target in fixed time.
 
 ## Installation Guide
 We suppose you have already installed ROS in your system, but it should work anyway.
+
+#### Easy Guide
+That's the one-line guide, that will get everything done but needs sudo access. If you wanna play it safe, follow the "hard" one
+
+```bash
+git clone https://github.com/abcamiletto/urdf_optcontrol.git
+cd urdf_optcontrol
+sudo ./install.sh
+```
+
+#### "Hard" Guide
 1. Get CasADi: `pip install casadi`
 2. Clone our version of urdf2casadi `git clone https://github.com/abcamiletto/urdf2casadi-light.git`
 3. Inside it, install the package `pip install .`
