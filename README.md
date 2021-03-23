@@ -7,12 +7,11 @@ We suppose you have already installed ROS in your system, but it should work any
 1. Get CasADi: `pip install casadi`
 2. Clone our version of urdf2casadi `git clone https://github.com/abcamiletto/urdf2casadi-light.git`
 3. Inside it, install the package `pip install .`
-4. Import this package
-Since we have yet to make this package "pip installable" you need to import in your python code manually, by having the optimal_control.py in the same folder of your python code or by adding its path to the interpreter.
+4. Clone this repo and do like point 3.
 
 ## Example of usage
 ```python
-import optimal_control as OC
+import urdf_optcontrol as OC
 import casadi as cs
 
 # URDF options
@@ -54,7 +53,7 @@ time_horizon = 1
 steps = 50
 
 # Load the urdf and calculate the differential equations
-urdf_opt = OC.Urdf2Moon(urdf_path, root, end)
+urdf_opt = OC.URDFopt(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
