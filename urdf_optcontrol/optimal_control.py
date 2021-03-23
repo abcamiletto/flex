@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from math import ceil
 
 
-class Urdf2Moon:
+class URDFopt:
     def __init__(self, urdf_path, root, tip):
         self.robot_parser = self.load_urdf(urdf_path)
 
@@ -288,6 +288,6 @@ if __name__ == '__main__':
     time_horizon = 1
     steps = 50
 
-    urdf_2_opt = Urdf2Moon(urdf_path, root, end)
+    urdf_2_opt = URDFopt(urdf_path, root, end)
     opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost, my_constraints)
     fig = urdf_2_opt.print_results()
