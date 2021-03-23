@@ -11,7 +11,7 @@ We suppose you have already installed ROS in your system, but it should work any
 
 ## Example of usage
 ```python
-import optimal_control as OC
+import urdf_optcontrol as OC
 import casadi as cs
 
 # URDF options
@@ -53,7 +53,7 @@ time_horizon = 1
 steps = 50
 
 # Load the urdf and calculate the differential equations
-urdf_opt = OC.Urdf2Moon(urdf_path, root, end)
+urdf_opt = OC.URDFopt(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
