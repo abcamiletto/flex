@@ -12,7 +12,7 @@ setup(
     url="https://github.com/abcamiletto/urdf_optcontrol",
     description=DESCRIPTION,
     packages=find_packages(),
-    install_requires=['casadi', 'urdf2casadi', 'numpy', 'matplotlib'],
+    install_requires=['casadi', 'numpy', 'matplotlib'],
     keywords=['python', 'optimal_control', 'robotics', 'robots'],
     classifiers=[
         "Topic :: Scientific/Engineering :: Mathematics"
