@@ -11,7 +11,7 @@ That's the one-line guide, that will get everything done but needs sudo access. 
 ```bash
 git clone https://github.com/abcamiletto/urdf_optcontrol.git
 cd urdf_optcontrol
-sudo ./install.sh
+./install.sh
 ```
 
 To see if it's working, run the python file in the example folder
