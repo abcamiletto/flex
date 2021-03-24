@@ -9,8 +9,7 @@ We suppose you have already installed ROS in your system, but it should work any
 That's the one-line guide, that will get everything done but needs sudo access. If you wanna play it safe, follow the "hard" one
 
 ```bash
-git clone https://github.com/abcamiletto/urdf_optcontrol.git
-cd urdf_optcontrol
+git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontrol
 ./install.sh
 ```
 
