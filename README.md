@@ -108,4 +108,4 @@ Third Round
 - [x] Test on a multiple arms robot
 - [x] Pip package and Auto installation
 - [ ] SAE modeling
-
+- [ ] Direct collocation
