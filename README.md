@@ -107,11 +107,13 @@ Third Round
 
 - [x] Test on a multiple arms robot
 - [x] Pip package and Auto installation
-- [ ] SAE modeling
-- [ ] Direct collocation
-- [ ] Check damping+friction implementation in urdf2casadi
+- [x] SAE modeling
 
 Fourth Round
 
+- [ ] SAE with not every joint elastic
+- [ ] Direct collocation
+- [ ] Check damping+friction implementation in urdf2casadi
 - [ ] ROS utilization guide 
-- [ ] Implementation of a minimum time cost function
+- [ ] Implementation of a minimum time cost function (?)
+- [ ] Add a parameter to choose whether you want to implement motor dynamics or not
