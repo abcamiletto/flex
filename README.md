@@ -107,6 +107,10 @@ Third Round
 
 - [x] Test on a multiple arms robot
 - [x] Pip package and Auto installation
-- [ ] SAE modeling
-- [ ] Direct collocation
+- [x] SAE modeling
 
+Fourth Round
+
+- [ ] Set a proper stiffness matrix
+- [ ] Consider also theta in cost functional
+- [ ] Correct implementation of joint limits (primarly on q)
