@@ -116,3 +116,4 @@ Third Round
 Fourth Round
 
 - [ ] ROS utilization guide 
+- [ ] Implementation of a minimum time cost function
