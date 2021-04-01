@@ -108,6 +108,8 @@ Third Round
 - [x] Test on a multiple arms robot
 - [x] Pip package and Auto installation
 - [x] SAE modeling
+- [ ] Make *get_stiffness* return a list of floats
+- [ ] Verify try&except in *get_stiffness*
 
 Fourth Round
 
