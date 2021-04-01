@@ -112,7 +112,7 @@ Third Round
 Fourth Round
 
 - [ ] SAE with not every joint elastic
-- [ ] Check damping+friction implementation in urdf2casadi
+- [x] Check damping+friction implementation in urdf2casadi (FIXED, pull and reinstall plz)
 - [ ] ROS utilization guide 
 - [ ] Add a parameter to choose whether you want to implement motor dynamics or not
 
