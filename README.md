@@ -112,8 +112,10 @@ Third Round
 Fourth Round
 
 - [ ] SAE with not every joint elastic
-- [ ] Direct collocation
 - [ ] Check damping+friction implementation in urdf2casadi
 - [ ] ROS utilization guide 
-- [ ] Implementation of a minimum time cost function (?)
 - [ ] Add a parameter to choose whether you want to implement motor dynamics or not
+
+To do or not to do?
+- [ ] Implementation of a minimum time cost function 
+- [ ] Direct allocation
