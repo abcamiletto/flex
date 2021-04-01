@@ -112,3 +112,7 @@ Third Round
 - [ ] Make *get_stiffness* return a list of floats
 - [ ] Check damping+friction implementation in urdf2casadi
 - [ ] Verify try&except in *get_stiffness*
+
+Fourth Round
+
+- [ ] ROS utilization guide 
