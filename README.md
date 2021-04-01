@@ -109,3 +109,6 @@ Third Round
 - [x] Pip package and Auto installation
 - [ ] SAE modeling
 - [ ] Direct collocation
+- [ ] Make *get_stiffness* return a list of floats
+- [ ] Check damping+friction implementation in urdf2casadi
+- [ ] Verify try&except in *get_stiffness*
