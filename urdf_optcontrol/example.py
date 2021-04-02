@@ -1,22 +1,3 @@
-# From URDF to Optimal Control
-Here we offer an easy to use library that allows you to do optimal control of a given robot, via urdf.
-The optimal control we offer is based on a trajectory target in fixed time.
-
-## Installation Guide
-We suppose you have already installed ROS in your system, but it should work anyway.
-
-We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
-
-```bash
-git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontrol
-./install.sh
-```
-
-To see if it's working, run the python file in the example folder
-
-
-## Example of usage
-```python
 import urdf_optcontrol as OC
 import casadi as cs
 
@@ -83,46 +64,3 @@ opt = urdf_opt.solve(
 # Print the results!
 fig = urdf_opt.print_results()
 fig.show()
-```
-
-
-### Things to do:
-
-- [x] Indipendence to number of joints
-- [x] Joint limits from URDF
-- [x] Reference point different from origin
-- [x] Reference Trajectory
-- [x] Cost function on final position
-- [x] Check performance with SX/MX
-- [x] Check sparse Hessian *problem*
-- [x] Fix Latex Mathematical Modeling
-- [x] Reconstruct the actual optimal input
-
-Second Round
-
-- [x] Easy UI for algebraic constraints
-- [x] Auto Parsing of *max_velocity* and *max_effort*
-- [x] Friction and Damping modeling --- *numerical problems*
-- [x] URDF parsing to get joint stiffness 
-- [x] Control over trajectory derivative
-- [x] Installation Guide
-- [x] Code Guide 
-- [x] Update LaTeX
-
-Third Round
-
-- [x] Test on a multiple arms robot
-- [x] Pip package and Auto installation
-- [x] SAE modeling
-
-Fourth Round
-
-- [ ] SAE with not every joint elastic
-- [x] Check damping+friction implementation in urdf2casadi (FIXED, pull and reinstall plz)
-- [ ] ROS utilization guide 
-- [ ] Add a parameter to choose whether you want to implement motor dynamics or not
-
-To do or not to do?
-- [x] Implementation of a minimum time cost function 
-- [x] Implementation of fixed final constraints
-- [ ] Direct allocation
