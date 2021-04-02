@@ -7,8 +7,8 @@ DESCRIPTION = 'Get optimal control from URDF'
 setup(
     name="urdf_optcontrol",
     version=VERSION,
-    author="Andrea Boscolo Camiletto",
-    author_email="<abcamiletto@gmail.com>",
+    author="Andrea Boscolo Camiletto, Marco Biasizzo",
+    author_email="<abcamiletto@gmail.com>, <marco.biasizzo@outlook.it>",
     url="https://github.com/abcamiletto/urdf_optcontrol",
     description=DESCRIPTION,
     packages=find_packages(),
