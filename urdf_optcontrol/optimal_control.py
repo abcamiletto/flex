@@ -22,13 +22,15 @@ class URDFopt:
         self.M_inv = cs.pinv(self.M)
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
 
-    def solve(self, cost_func, time_horizon, control_steps, initial_cond, trajectory_target, final_term_cost=None, my_constraint=None, rk_interval=4, max_iter=250):
+    def solve(self, cost_func, control_steps, initial_cond, trajectory_target, time_horizon=cs.MX.sym("T", 1), 
+              final_term_cost=None, my_constraint=None, my_final_constraint=None, rk_interval=4, max_iter=250):
         #Store Values
         self.t = cs.SX.sym("t", 1)
         self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
         self.cost_func = cost_func
         self.final_term_cost = final_term_cost
         self.my_constraint = my_constraint
+        self.my_final_constraint = my_final_constraint
         self.T = time_horizon
         self.N = control_steps
         self.rk_intervals = rk_interval
@@ -49,7 +51,6 @@ class URDFopt:
         self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
         return {'q': self.q_opt, 'qd': self.qd_opt, 
                 'u': self.u_opt}
-
 
     def load_urdf(self, urdf_path):
         robot_parser = u2c.URDFparser()
@@ -114,6 +115,7 @@ class URDFopt:
                              [self.x_dot, J_dot])  # outputs
         return f
     def rk4(self, f, T, N, m):
+        Trk4 = cs.MX.sym('Trk4', 1)
         dt = T/N/m
 
         # variable definition for RK method
@@ -128,15 +130,15 @@ class URDFopt:
         # Integration
         for j in range(m):
             k1, k1_q = f(X,  U,  t)
-            k2, k2_q = f(X + dt/2 * k1, U,  t)
-            k3, k3_q = f(X + dt/2 * k2, U,  t)
-            k4, k4_q = f(X + dt * k3, U,  t)
+            k2, k2_q = f(X + dt/2 @ k1, U,  t)
+            k3, k3_q = f(X + dt/2 @ k2, U,  t)
+            k4, k4_q = f(X + dt @ k3, U,  t)
             # update the state
-            X = X + dt/6*(k1 +2*k2 +2*k3 +k4)    
+            X = X + dt/6@(k1 +2*k2 +2*k3 +k4)    
             # update the cost function 
-            Q = Q + dt/6*(k1_q + 2*k2_q + 2*k3_q + k4_q)
+            Q = Q + dt/6@(k1_q + 2*k2_q + 2*k3_q + k4_q)
 
-        F = cs.Function('F', [X0, U, t], [X, Q],['x0','p', 'time'],['xf','qf'])
+        F = cs.Function('F', [X0, U, t], [X, Q],['x0','p','time'],['xf','qf'])
         return F
     def nlp_solver(self, initial_cond, final_term_cost, trajectory_target, my_constraints):
         # Start with an empty NLP
@@ -161,7 +163,7 @@ class URDFopt:
         for k in range(self.N):
             # New NLP variable for the control
             Uk = cs.MX.sym('U_' + str(k), self.num_joints) # generate the k-th control command, 2x1 dimension
-            w += [Uk]        # list of commands [U_0, U_1, ..., U_(N-1)]
+            w += [Uk]       # list of commands [U_0, U_1, ..., U_(N-1)]
             w_g += [0] * self.num_joints  # initial guess
             
             # Add inequality constraint on inputs
@@ -195,9 +197,18 @@ class URDFopt:
             if my_constraints != None:
                 self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, my_constraints)
     
+        if isinstance(self.T, cs.casadi.MX):
+            w += [self.T]
+            w_g += [1.0]
+            lbw += [0.05]
+            ubw += [float('inf')]
+    
         # add a final term cost. If not specified is 0.
         if final_term_cost != None:
             J = J+final_term_cost(Xk_end[0:self.num_joints]-cs.substitute(self.traj,self.t,self.T), Xk_end[self.num_joints:]-cs.substitute(self.traj_dot,self.t,self.T), Uk) # f_t_c(q, qd, u)    
+            
+        if self.my_final_constraint != None:
+            self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, self.my_final_constraint)
             
         # Define the problem to be solved
         problem = {'f': J, 'x': cs.vertcat(*w), 'g': cs.vertcat(*g)}
@@ -210,6 +221,11 @@ class URDFopt:
 
         # Solve the NLP
         opt = solver['x']
+        if isinstance(self.T, cs.casadi.MX):
+            self.T_opt = opt[-1]
+            opt = opt[0:-1]
+        else:
+            self.T_opt = self.T
         self.q_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
         self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
         self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
@@ -234,7 +250,7 @@ class URDFopt:
             traj_dot = cs.vertcat(*traj_dot)
         return traj, traj_dot
     def print_results(self):
-        tgrid = [self.T/self.N*k for k in range(self.N+1)]
+        tgrid = [self.T_opt/self.N*k for k in range(self.N+1)]
 
         fig, axes = plt.subplots(nrows=int(ceil(self.num_joints/2)), ncols=2, figsize=(15, 4*ceil(self.num_joints/2)))
         
@@ -284,10 +300,19 @@ if __name__ == '__main__':
     def my_constraint3(q, q_dot, u, ee_pos):
         return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
     my_constraints=[my_constraint1, my_constraint2, my_constraint3]
+    
+    
+    def my_final_constraint1(q, q_dot, u, ee_pos):
+        return [1, 1], q, [1, 1]
+    def my_final_constraint2(q, q_dot, u, ee_pos):
+        return [0.757324, 0.2, 2.43627], ee_pos, [0.757324, 0.2, 2.43627]
+    my_final_constraints = [my_final_constraint1]
+
 
     time_horizon = 1
     steps = 50
 
     urdf_2_opt = URDFopt(urdf_path, root, end)
-    opt = urdf_2_opt.solve(my_cost_func, time_horizon, steps, in_cond, trajectory_target, my_final_term_cost, my_constraints)
+    opt = urdf_2_opt.solve(my_cost_func, steps, in_cond, trajectory_target, final_term_cost=my_final_term_cost, 
+                           my_constraint=my_constraints, my_final_constraint=my_final_constraints)
     fig = urdf_2_opt.print_results()
