@@ -73,7 +73,7 @@ opt = urdf_opt.solve(
     steps,
     in_cond,
     trajectory_target_,
-    time_horizon=time_horizon
+    time_horizon=time_horizon,
     final_term_cost=my_final_term_cost, 
     my_constraint=my_constraints, 
     my_final_constraint=my_final_constraints,
