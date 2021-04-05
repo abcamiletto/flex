@@ -4,6 +4,7 @@ from urdf2casadi import urdfparser as u2c
 import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
+import xml.etree.ElementTree as ET
 
 class URDFopt:
     def load_robot(self, urdf_path, root, tip, **kwargs):
@@ -388,14 +389,7 @@ if __name__ == '__main__':
             q = [3.14, 0]
             return q
         in_cond = [0]*4
-    else:
-        urdf_path = "./urdf/panda.urdf"
-        root = "panda_link0" 
-        end = "panda_link8"
-        def trajectory_target(t):
-            q = [0]*7
-            return q
-        in_cond = [0,-0.78,0,-2.36,0,1.57,0.78] + [0.1]*7
+
 
     def my_cost_func(q, qd, u):
         return 10 * cs.mtimes(q.T,q) + cs.mtimes(u.T,u) / 10
@@ -423,7 +417,6 @@ if __name__ == '__main__':
     time_horizon = 1
     steps = 50
 
-    urdf_2_opt = URDFopt(urdf_path, root, end)
-    opt = urdf_2_opt.solve(my_cost_func, steps, in_cond, trajectory_target, final_term_cost=my_final_term_cost, 
-                           my_constraint=my_constraints, my_final_constraint=my_final_constraints)
-    fig = urdf_2_opt.print_results()
+    optimizer.load_robot(urdf_path, root, end)
+    optimizer.load_problem(my_cost_func, steps, in_cond, trajectory_target, time_horizon = time_horizon, max_iter=80)
+    fig = optimizer.show_result()
