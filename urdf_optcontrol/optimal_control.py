@@ -5,9 +5,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
 
+class OptimalControl:
+    def load_robot(self, urdf_path, root, tip, **kwargs):
+        self.robot = Robot(urdf_path, root, tip, **kwargs)
 
-class URDFopt:
-    def __init__(self, urdf_path, root, tip):
+    def load_problem(self, cost_func, control_steps, initial_cond, trajectory_target, **kwargs):
+        self.problem = Problem(self.robot, cost_func, control_steps, initial_cond, trajectory_target, **kwargs)
+        return self.problem.result
+    
+    def show_result(self):
+        return self.problem.print_results()
+
+class Robot:
+    def __init__(self, urdf_path, root, tip, motor_inertias=None, sea_damping=None):
+        """ Constructor method.
+        Takes the bare minimum as inputs and it calculates basic function we'll be needing"""
         self.robot_parser = self.load_urdf(urdf_path)
 
         # Store inputs
@@ -21,36 +33,19 @@ class URDFopt:
         self.ee_pos = self.get_forward_kinematics()
         self.M_inv = cs.pinv(self.M)
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
-
-    def solve(self, cost_func, control_steps, initial_cond, trajectory_target, time_horizon=cs.MX.sym("T", 1), 
-              final_term_cost=None, my_constraint=None, my_final_constraint=None, rk_interval=4, max_iter=250):
-        #Store Values
-        self.t = cs.SX.sym("t", 1)
-        self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
-        self.cost_func = cost_func
-        self.final_term_cost = final_term_cost
-        self.my_constraint = my_constraint
-        self.my_final_constraint = my_final_constraint
-        self.T = time_horizon
-        self.N = control_steps
-        self.rk_intervals = rk_interval
-        self.max_iter = max_iter
-        if len(initial_cond) == 2*self.num_joints:
-            self.initial_cond = initial_cond
-        else:
-            raise ValueError('List should be {} item long: (q, q_dot)'.format(2*self.num_joints))
         
-
         # Fix boundaries if not given
         self.upper_u, self.lower_u = self.format_properly(self.max_effort)
         self.upper_qd, self.lower_qd = self.format_properly(self.max_velocity)
-
-        # Working it up
-        self.f = self.get_diff_eq(self.cost_func, self.traj)
-        self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
-        self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
-        return {'q': self.q_opt, 'qd': self.qd_opt, 
-                'u': self.u_opt}
+        
+        # SEA Stuff
+        self.sea = self.get_joints_stiffness(urdf_path).any() # True if at least one joint is sea
+        if self.sea:
+            self.K = self.get_joints_stiffness(urdf_path)
+            self.SEAvars()
+            self.B = self.get_B(motor_inertias)
+            self.FDsea = self.get_FDsea(sea_damping)
+            self.areMotor = self.B.any() # True when we're modeling also motor inertia
 
     def load_urdf(self, urdf_path):
         robot_parser = u2c.URDFparser()
@@ -82,9 +77,32 @@ class URDFopt:
         ee_pos = cs.Function('ee_pos', [dummy_sym], [ee])
         return ee_pos
     def get_limits(self):
-        _, _, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
+        _, self.actuated_list, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
         return upper_q, lower_q, max_effort, max_velocity
+    # SEA Methods
+    def SEAvars(self):
+        self.theta = cs.SX.sym("theta", self.num_joints)
+        self.theta_dot = cs.SX.sym("theta_dot", self.num_joints)
+        self.tau_sea = self.K@(self.q - self.theta)
+    def get_joints_stiffness(self, urdf_path):
+        tree = ET.parse(urdf_path)
+        results = {}
+        for gazebo in tree.findall('gazebo/plugin'):
+            try:
+                results[gazebo.find('joint').text] = float(gazebo.find('stiffness').text)
+            except:
+                pass
+        in_list = [results.get(joint, 0) for joint in self.actuated_list]
+        return np.diag(in_list)
+    def get_B(self, motor_inertias):
+        if motor_inertias is None: motor_inertias = {}
+        in_list = [motor_inertias.get(joint, 0) for joint in self.actuated_list]
+        return np.diag(in_list)
+    def get_FDsea(self, sea_damping):
+        if sea_damping is None: sea_damping = {}
+        in_list = [sea_damping.get(joint, 0) for joint in self.actuated_list]
+        return np.diag(in_list)
 
     def format_properly(self, item):
         if item == None:
@@ -102,15 +120,92 @@ class URDFopt:
         else:
             raise ValueError('Input should be a number or a list of numbers')
         return upper, lower
+    
+    def __str__(self):
+        strRobot = ('      ROBOT DESCRIPTION' "\n" 
+                    f'The number of joints is {self.num_joints}' "\n" 
+                    f'The first one is {self.root}, the last one {self.tip}' "\n" 
+                    f'Lower Bounds on q : {self.lower_q}' "\n" 
+                    f'Upper Bounds on q : {self.upper_q}' "\n"  
+                    f'Max Velocity : {self.max_velocity}' "\n" 
+                    f'Max Effort : {self.max_effort}' "\n")
+        if self.sea:
+            strRobot += f"Stiffness Matrix : {self.K}"
+        else:
+            strRobot += "There are no elastic joints"
+        return strRobot        
 
+class Problem:
+    def __init__(self,robot, cost_func, control_steps, initial_cond, trajectory_target, time_horizon=cs.MX.sym("T", 1), 
+              final_term_cost=None, my_constraint=None, my_final_constraint=None,
+              rk_interval=4, max_iter=250):
+        """ Solve method. Takes the problems conditions as input and returns its solution"""
+        self.robot = robot
+        
+        # Store all Robot's attributes to Problem Attributes. Don't try this at home
+        self.__dict__.update(self.robot.__dict__) 
+        
+        # Store Values
+        self.t = cs.SX.sym("t", 1)
+        self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
+        self.cost_func = cost_func
+        self.final_term_cost = final_term_cost
+        self.my_constraint = my_constraint
+        self.my_final_constraint = my_final_constraint
+        self.T = time_horizon
+        self.N = control_steps
+        self.rk_intervals = rk_interval
+        self.max_iter = max_iter
+        if len(initial_cond) == 2*self.num_joints:
+            self.initial_cond = initial_cond
+        else:
+            raise ValueError('List should be {} item long: (q, q_dot)'.format(2*self.num_joints))
+        
+
+        # Working it up
+        self.f = self.get_diff_eq(self.cost_func, self.traj)
+        self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
+        self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
+        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'u': self.u_opt}  
+            
     def get_diff_eq(self, cost_func, traj):
+        # Right Hand side of differential equations!
+        RHS = []
         rhs1 = self.q_dot
-        rhs2 = -cs.mtimes(self.M_inv, self.Cq) + cs.mtimes(self.M_inv, (self.u -self.G - cs.mtimes(self.Fd, self.q_dot)- cs.mtimes(self.Ff, cs.sign(self.q_dot))))
+        rhs2 = self.M_inv@(-self.Cq -self.G -self.Fd@self.q_dot -self.Ff@cs.sign(self.q_dot))
+        
+        if self.sea and self.areMotor: # Modeling both SEA and motor inertia
+            # Right Hand Side of differential equations
+            rhs2 += -self.M_inv@self.tau_sea
+            rhs3 = self.theta_dot
+            rhs4 = cs.pinv(self.B)@(-self.FDsea@self.q_dot +self.u +self.tau_sea)
+            RHS = [rhs1, rhs2, rhs3, rhs4]
+            # State  variable
+            self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
+            self.num_state_var = self.num_joints*2
+            self.lower_q = self.lower_q*2
+            self.lower_qd = self.lower_qd*2
+            self.upper_q = self.upper_q*2
+            self.upper_qd = self.upper_qd*2
+            
+        elif self.sea and not self.areMotor: # Modeling only SEA --- TODO
+            rhs2 += -self.M_inv@self.tau_sea + self.M_inv@self.u
+            rhs3 = self.theta_dot
+            rhs4 = -self.K@(self.theta-self.q)
+            RHS = [rhs1, rhs2, rhs3, rhs4]
+            # State  variable
+            self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
+            
+        else:   # No SEA nor motor inertias
+            rhs2 += self.M_inv@self.u
+            RHS = [rhs1, rhs2]
+            # State  variable
+            self.x = cs.vertcat(self.q, self.q_dot)
+            self.num_state_var = self.num_joints
         
         J_dot = cost_func(self.q-self.traj, self.q_dot-self.traj_dot, self.u)
         
-        self.x = cs.vertcat(self.q, self.q_dot)
-        self.x_dot = cs.vertcat(rhs1, rhs2)
+        self.x_dot = cs.vertcat(*RHS)
         f = cs.Function('f', [self.x, self.u, self.t],    # inputs
                              [self.x_dot, J_dot])  # outputs
         return f
@@ -119,7 +214,7 @@ class URDFopt:
         dt = T/N/m
 
         # variable definition for RK method
-        X0 = cs.MX.sym('X0', self.num_joints * 2)
+        X0 = cs.MX.sym('X0', self.num_state_var * 2)
         U = cs.MX.sym('U', self.num_joints)
         t = cs.MX.sym('t', 1)
 
@@ -153,8 +248,10 @@ class URDFopt:
         
         self.t = cs.MX.sym("t", 1)
         self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
-        Xk = cs.MX.sym('X0', self.num_joints*2) # MUST be coherent with the condition specified abow
+        Xk = cs.MX.sym('X0', self.num_state_var*2) # MUST be coherent with the condition specified abow
         w += [Xk]
+        if self.sea:
+            initial_cond = initial_cond * 2
         w_g  += initial_cond
         lbw += initial_cond
         ubw += initial_cond
@@ -176,9 +273,9 @@ class URDFopt:
             J  = J+Fk['qf']
     
             # New NLP variable for state at end of interval
-            Xk = cs.MX.sym('X_' + str(k+1), 2*self.num_joints)
+            Xk = cs.MX.sym('X_' + str(k+1), 2*self.num_state_var)
             w  += [Xk]
-            w_g += [0] * (2*self.num_joints) # initial guess
+            w_g += [0] * (2*self.num_state_var) # initial guess
             
             # Add inequality constraint on state
             lbw += self.lower_q      # lower bound on q
@@ -188,8 +285,8 @@ class URDFopt:
 
             # Add equality constraint
             g   += [Xk_end-Xk]
-            lbg += [0] * (2*self.num_joints)
-            ubg += [0] * (2*self.num_joints)
+            lbg += [0] * (2*self.num_state_var)
+            ubg += [0] * (2*self.num_state_var)
             
             # get forward kinematics
             EEk_pos = self.ee_pos(Xk[0:self.num_joints])
@@ -226,9 +323,18 @@ class URDFopt:
             opt = opt[0:-1]
         else:
             self.T_opt = self.T
-        self.q_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
-        self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
-        self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
+        
+        if self.sea:
+            self.q_opt = [opt[idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
+            self.qd_opt = [opt[self.num_joints+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
+            self.theta_opt = [opt[self.num_joints*2+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
+            self.thetad_opt = [opt[self.num_joints*2+ self.num_joints+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
+            self.u_opt = [opt[self.num_joints*2+ 2*(self.num_joints)+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
+        else:
+            self.q_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
+            self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
+            self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
+            
 
     def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_,  my_constraints_):
         for constraint in my_constraints_:
@@ -263,7 +369,12 @@ class URDFopt:
         ax.plot(tgrid, self.q_opt[idx], '--')
         ax.plot(tgrid, self.qd_opt[idx], '--')
         ax.plot(tgrid[1:], self.u_opt[idx], '-.')
-        ax.legend(['q'+str(idx),'q' + str(idx) +'_dot','u' + str(idx)])
+        legend = ['q'+str(idx),'q' + str(idx) +'_dot','u' + str(idx)]
+        if self.sea:
+            ax.plot(tgrid, self.theta_opt[idx], '.')
+            ax.plot(tgrid, self.thetad_opt[idx], '.')
+            legend += ['theta' + str(idx),  'theta' + str(idx) +'_dot']
+        ax.legend(legend)
         return ax
         
 
