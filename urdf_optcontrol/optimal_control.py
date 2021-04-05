@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import ceil
 
-class OptimalControl:
+class URDFopt:
     def load_robot(self, urdf_path, root, tip, **kwargs):
         self.robot = Robot(urdf_path, root, tip, **kwargs)
 
@@ -377,7 +377,7 @@ class Problem:
         ax.legend(legend)
         return ax
         
-
+optimizer = URDFopt()
 
 if __name__ == '__main__':
     if True:
