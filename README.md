@@ -17,7 +17,7 @@ To see if it's working, run the python file in the example folder
 
 ## Example of usage
 ```python
-import urdf_optcontrol as OC
+from urdf_optcontrol import optimizer
 import casadi as cs
 
 # URDF options
@@ -64,16 +64,16 @@ steps = 50
 time_horizon = 1    # if not set, it is free (and optimized)
 
 # Load the urdf and calculate the differential equations
-urdf_opt = OC.URDFopt(urdf_path, root, end)
+optimizer.load_robot(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
-opt = urdf_opt.solve(
+optimizer.load_problem(
     my_cost_func,
     steps,
     in_cond,
     trajectory_target_,
-    # time_horizon=time_horizon,
+    time_horizon=time_horizon,
     final_term_cost=my_final_term_cost, 
     my_constraint=my_constraints, 
     my_final_constraint=my_final_constraints,
@@ -81,7 +81,7 @@ opt = urdf_opt.solve(
     )
 
 # Print the results!
-fig = urdf_opt.print_results()
+fig = optimizer.show_result()
 fig.show()
 ```
 
@@ -117,10 +117,11 @@ Third Round
 
 Fourth Round
 
-- [ ] SAE with not every joint elastic
+- [x] SAE with not every joint elastic
 - [x] Check damping+friction implementation in urdf2casadi (FIXED, pull and reinstall plz)
 - [ ] ROS utilization guide 
-- [ ] Add a parameter to choose whether you want to implement motor dynamics or not
+- [x] Add a parameter to choose whether you want to implement motor dynamics or not
+- [ ] Fix examples
 
 To do or not to do?
 - [x] Implementation of a minimum time cost function 
