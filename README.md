@@ -122,8 +122,10 @@ Fourth Round
 - [ ] ROS utilization guide 
 - [x] Add a parameter to choose whether you want to implement motor dynamics or not
 - [ ] Fix examples
+- [x] Modelling without motor inertias
+- [ ] Raise error if cost function with theta when in previous case
 
 To do or not to do?
 - [x] Implementation of a minimum time cost function 
 - [x] Implementation of fixed final constraints
-- [ ] Direct allocation
+- [ ] Direct collocation
