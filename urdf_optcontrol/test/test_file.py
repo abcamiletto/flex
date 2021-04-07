@@ -3,6 +3,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from optimal_control import URDFopt
 import casadi as cs
+from matplotlib import pyplot as plt
 
 class TestCalc(unittest.TestCase):
 
@@ -46,7 +47,23 @@ class TestCalc(unittest.TestCase):
         self.optimizer.load_robot(urdf_path, root, end, motor_inertias=B)
         self.optimizer.load_problem(self.my_cost_func, self.steps, in_cond, trajectory_target, time_horizon = self.time_horizon, max_iter=3)
 
-    def test_panda(self):
+    def test_simplecube_no_inertia(self):
+        urdf_path = "../urdf/simplecube_weak.urdf"
+        root = "cube_base" 
+        end = "Link1"
+
+        def trajectory_target(t):
+            q = [0]
+            return q
+        in_cond = [0.2]*2
+
+        self.optimizer.load_robot(urdf_path, root, end)
+        self.optimizer.load_problem(self.my_cost_func, self.steps, in_cond, trajectory_target, time_horizon = self.time_horizon, max_iter=3)
+        fig = self.optimizer.show_result()
+        plt.show()
+
+
+    def _test_panda(self):
         urdf_path = "../urdf/panda_no_friction.urdf"
         root = "panda_link0" 
         end = "panda_link8"
@@ -106,6 +123,8 @@ class TestCalc(unittest.TestCase):
 
         self.optimizer.load_robot(urdf_path, root, end)
         self.optimizer.load_problem(self.my_cost_func, self.steps, in_cond, trajectory_target, max_iter=3)
+
+
 
 
 

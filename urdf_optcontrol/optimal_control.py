@@ -189,13 +189,13 @@ class Problem:
             self.upper_q = self.upper_q*2
             self.upper_qd = self.upper_qd*2
             
-        elif self.sea and not self.areMotor: # Modeling only SEA --- TODO
-            rhs2 += -self.M_inv@self.tau_sea + self.M_inv@self.u
-            rhs3 = self.theta_dot
-            rhs4 = -self.K@(self.theta-self.q)
-            RHS = [rhs1, rhs2, rhs3, rhs4]
+        elif self.sea and not self.areMotor: # Modeling only SEA 
+            rhs2 += -self.M_inv@self.K@(self.q - self.u)
+            self.upper_u, self.lower_u = self.upper_q, self.lower_q
+            RHS = [rhs1, rhs2]
             # State  variable
-            self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
+            self.x = cs.vertcat(self.q, self.q_dot)
+            self.num_state_var = self.num_joints
             
         else:   # No SEA nor motor inertias
             rhs2 += self.M_inv@self.u
@@ -251,7 +251,7 @@ class Problem:
         self.traj ,self.traj_dot = self.derive_trajectory(trajectory_target, self.t)
         Xk = cs.MX.sym('X0', self.num_state_var*2) # MUST be coherent with the condition specified abow
         w += [Xk]
-        if self.sea:
+        if self.sea and self.areMotor:
             initial_cond = initial_cond * 2
         w_g  += initial_cond
         lbw += initial_cond
@@ -265,8 +265,12 @@ class Problem:
             w_g += [0] * self.num_joints  # initial guess
             
             # Add inequality constraint on inputs
-            lbw += self.lower_u       # lower bound on u
-            ubw += self.upper_u       # upper bound on u
+            if self.sea and not self.areMotor and k == 0: # IN THIS CASE U IS THETA AND WE NEED IT TO MATCH Q AT TIME ZERO
+                lbw += self.initial_cond[:self.num_joints]    
+                ubw += self.initial_cond[:self.num_joints]     
+            else:
+                lbw += self.lower_u       # lower bound on u
+                ubw += self.upper_u       # upper bound on u
             
             # Integrate till the end of the interval
             Fk = self.F(x0=Xk, p=Uk, time=dt*k)     #That's the actual integration!
@@ -325,7 +329,7 @@ class Problem:
         else:
             self.T_opt = self.T
         
-        if self.sea:
+        if self.sea and self.areMotor:
             self.q_opt = [opt[idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
             self.qd_opt = [opt[self.num_joints+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
             self.theta_opt = [opt[self.num_joints*2+idx::(3*(self.num_joints)+ 2*(self.num_joints))]for idx in range(self.num_joints)]
@@ -371,7 +375,7 @@ class Problem:
         ax.plot(tgrid, self.qd_opt[idx], '--')
         ax.plot(tgrid[1:], self.u_opt[idx], '-.')
         legend = ['q'+str(idx),'q' + str(idx) +'_dot','u' + str(idx)]
-        if self.sea:
+        if self.sea and self.areMotor:
             ax.plot(tgrid, self.theta_opt[idx], '.')
             ax.plot(tgrid, self.thetad_opt[idx], '.')
             legend += ['theta' + str(idx),  'theta' + str(idx) +'_dot']
@@ -420,3 +424,4 @@ if __name__ == '__main__':
     optimizer.load_robot(urdf_path, root, end)
     optimizer.load_problem(my_cost_func, steps, in_cond, trajectory_target, time_horizon = time_horizon, max_iter=80)
     fig = optimizer.show_result()
+    print(vars(optimizer.robot).keys())
