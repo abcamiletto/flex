@@ -17,11 +17,12 @@ To see if it's working, run the python file in the example folder
 
 ## Example of usage
 ```python
+#!/usr/bin/env python3
 from urdf_optcontrol import optimizer
-import casadi as cs
+from matplotlib import pyplot as plt
 
 # URDF options
-urdf_path = './urdf/rrbot.urdf'
+urdf_path = '/path/to/urdf/file'
 root = 'link1'
 end = 'link3'
 
@@ -35,11 +36,11 @@ def trajectory_target_(t):
 
 # Our cost function
 def my_cost_func(q, qd, u):
-    return 10 * cs.mtimes(q.T,q) + cs.mtimes(u.T,u) / 10
+    return 10*q.T@q + u.T@u/10
 
 # Our final term to be added at the end to our cost function
 def my_final_term_cost(q_f, qd_f, u_f):
-    return 10 * cs.mtimes(q_f.T, q_f)
+    return 10*q_f.T@q_f
 
 # Additional Constraints I may want to set
 def my_constraint1(q, q_dot, u, ee_pos):
@@ -54,10 +55,10 @@ my_constraints=[my_constraint1, my_constraint2, my_constraint3]
 # e.g. impose a value of 1 radiant for both the joints
 def my_final_constraint1(q, q_dot, u, ee_pos):
     return [1, 1], q, [1, 1]
-my_final_constraints = [my_final_constraint1]    # if not set is free (and optimized)
+my_final_constraints = [my_final_constraint1]    # if not set, it is free (and optimized)
 
 # Initial Condition in terms of q, qdot
-in_cond = [0] * 2 + [0] * 2
+in_cond = [0,0] + [0,0]
 
 # Optimization parameters
 steps = 50
@@ -82,7 +83,7 @@ optimizer.load_problem(
 
 # Print the results!
 fig = optimizer.show_result()
-fig.show()
+plt.show()
 ```
 
 
