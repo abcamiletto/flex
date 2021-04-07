@@ -122,7 +122,7 @@ Fourth Round
 - [x] Check damping+friction implementation in urdf2casadi
 - [ ] ROS utilization guide 
 - [x] Add a parameter to choose whether you want to implement motor dynamics or not
-- [ ] Fix examples
+- [x] Fix examples
 - [x] Modelling without motor inertias
 - [ ] Raise error if cost function with theta when in previous case
 
