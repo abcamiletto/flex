@@ -69,7 +69,7 @@ optimizer.load_robot(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
-optimizer.load_problem(
+res = optimizer.load_problem(
     my_cost_func,
     steps,
     in_cond,
