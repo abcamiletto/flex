@@ -69,7 +69,7 @@ optimizer.load_robot(urdf_path, root, end)
 
 # Solve an optimal problem with above parameters
 # Results will be a dictionary with q, qd, u as keys
-optimizer.load_problem(
+res = optimizer.load_problem(
     my_cost_func,
     steps,
     in_cond,
@@ -125,6 +125,9 @@ Fourth Round
 - [x] Fix examples
 - [x] Modelling without motor inertias
 - [ ] Raise error if cost function with theta when in previous case
+- [ ] Add a method "solve" to optimizer instead of returning on load_problem
+- [ ] Convert result to numpy array and make sure you can iterate on it
+- [ ] Return T if we're minimizing it
 
 To do or not to do?
 - [x] Implementation of a minimum time cost function 
