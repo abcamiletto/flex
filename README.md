@@ -24,6 +24,8 @@ pip install casadi
     
 ```bash
 git clone https://github.com/mahaarbo/urdf2casadi.git
+cd urdf2casadi
+pip install .
 ```
 
 
