@@ -12,7 +12,7 @@ git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontr
 ./install.sh
 ```
 
-The needed dependencies are (they are automatically installed with previous command):
+The needed dependencies are (automatically installed with previous command):
 
 1. casadi
 
