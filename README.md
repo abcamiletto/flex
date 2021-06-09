@@ -14,17 +14,17 @@ git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontr
 
 The needed dependencies are (they are automatically installed with previous command):
 
-    1. casadi
+	- casadi
 
-        ```bash
-        pip install casadi
-        ```
+```bash
+pip install casadi
+```
     
-    2. urdf2casadi
+    - urdf2casadi
     
-        ```bash
-        git clone https://github.com/mahaarbo/urdf2casadi.git
-        ```
+```bash
+git clone https://github.com/mahaarbo/urdf2casadi.git
+```
 
 
 To see if it's working, run the python file in the example folder
