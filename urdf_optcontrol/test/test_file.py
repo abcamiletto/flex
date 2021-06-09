@@ -12,7 +12,7 @@ class TestCalc(unittest.TestCase):
         self.optimizer = URDFopt()
 
         # Cost Functions
-        def my_cost_func(q, qd, u):
+        def my_cost_func(q, qd, u, t):
             return 10 * cs.mtimes(q.T,q) + cs.mtimes(u.T,u) / 10
         self.my_cost_func = my_cost_func
         

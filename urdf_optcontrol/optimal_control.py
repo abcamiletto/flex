@@ -204,7 +204,7 @@ class Problem:
             self.x = cs.vertcat(self.q, self.q_dot)
             self.num_state_var = self.num_joints
         
-        J_dot = cost_func(self.q-self.traj, self.q_dot-self.traj_dot, self.u)
+        J_dot = cost_func(self.q-self.traj, self.q_dot-self.traj_dot, self.u, self.t)
         
         self.x_dot = cs.vertcat(*RHS)
         f = cs.Function('f', [self.x, self.u, self.t],    # inputs
@@ -395,7 +395,7 @@ if __name__ == '__main__':
         in_cond = [0]*4
 
 
-    def my_cost_func(q, qd, u):
+    def my_cost_func(q, qd, u, t):
         return 10 * cs.mtimes(q.T,q) + cs.mtimes(u.T,u) / 10
 
     def my_final_term_cost(q_f, qd_f, u_f):

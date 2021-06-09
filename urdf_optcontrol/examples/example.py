@@ -16,7 +16,7 @@ def trajectory_target_(t):
     return (q, qdot)
 
 # Our cost function
-def my_cost_func(q, qd, u):
+def my_cost_func(q, qd, u, t):
     return 10*q.T@q + u.T@u/10
 
 # Our final term to be added at the end to our cost function

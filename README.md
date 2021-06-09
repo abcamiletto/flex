@@ -12,6 +12,18 @@ git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontr
 ./install.sh
 ```
 
+The needed dependencies are (they are automatically installed with previous command):
+    1. casadi
+    ```bash
+    pip install casadi
+    ```
+    
+    2. urdf2casadi
+    ```bash
+    git clone https://github.com/mahaarbo/urdf2casadi.git
+    ```
+
+
 To see if it's working, run the python file in the example folder
 
 
@@ -35,7 +47,7 @@ def trajectory_target_(t):
     return (q, qdot)
 
 # Our cost function
-def my_cost_func(q, qd, u):
+def my_cost_func(q, qd, u, t):
     return 10*q.T@q + u.T@u/10
 
 # Our final term to be added at the end to our cost function
