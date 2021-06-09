@@ -146,7 +146,10 @@ Fourth Round
 - [ ] Raise error if cost function with theta when in previous case
 - [ ] Add a method "solve" to optimizer instead of returning on load_problem
 - [ ] Convert result to numpy array and make sure you can iterate on it
-- [ ] Return T if we're minimizing it
+- [x] Return T if we're minimizing it
+- [ ] Desired trajectory as optional argument
+- [ ] Insert ee position and q acceleration in cost functions
+
 
 To do or not to do?
 - [x] Implementation of a minimum time cost function 

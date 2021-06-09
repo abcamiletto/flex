@@ -173,7 +173,7 @@ class Problem:
         self.f = self.get_diff_eq(self.cost_func, self.traj)
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
         self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
-        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'u': self.u_opt}  
+        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'u': self.u_opt, 'T': self.T_opt}  
             
     def get_diff_eq(self, cost_func, traj):
         # Right Hand side of differential equations!
@@ -301,7 +301,7 @@ class Problem:
             
             # get forward kinematics and joints accelerations
             EEk_pos = self.ee_pos(Xk[0:self.num_joints])
-            Q_ddot = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints+1:])
+            Q_ddot = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2*self.num_joints])
             # add custom constraints
             if my_constraints != None:
                 self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, Q_ddot, my_constraints)
