@@ -60,17 +60,19 @@ def my_final_term_cost(q_f, qd_f, u_f):
     return 10*q_f.T@q_f
 
 # Additional Constraints I may want to set
-def my_constraint1(q, q_dot, u, ee_pos):
+def my_constraint1(q, q_dot, u, ee_pos, qq_dot):
     return [-10, -10], u, [10, 10]
-def my_constraint2(q, q_dot, u, ee_pos):
+def my_constraint2(q, q_dot, u, ee_pos, qq_dot):
     return [-4, -4], q_dot, [4, 4]
-def my_constraint3(q, q_dot, u, ee_pos):
+def my_constraint3(q, q_dot, u, ee_pos, qq_dot):
     return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
-my_constraints=[my_constraint1, my_constraint2, my_constraint3]
+def my_constraint4(q, q_dot, u, ee_pos, qq_dot):
+    return [-20, -20], qq_dot, [20, 20]
+my_constraints=[my_constraint1, my_constraint2, my_constraint3, my_constraint4]
 
 # Constraints to be imposed on the final instant of the simulation
 # e.g. impose a value of 1 radiant for both the joints
-def my_final_constraint1(q, q_dot, u, ee_pos):
+def my_final_constraint1(q, q_dot, u, ee_pos, qq_dot):
     return [1, 1], q, [1, 1]
 my_final_constraints = [my_final_constraint1]    # if not set, it is free (and optimized)
 

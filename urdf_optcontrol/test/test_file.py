@@ -87,17 +87,17 @@ class TestCalc(unittest.TestCase):
         in_cond = [0]*4
 
         # Additional Constraints
-        def my_constraint1(q, q_dot, u, ee_pos):
+        def my_constraint1(q, q_dot, u, ee_pos, qq_dot):
             return [-10, -10], u, [10, 10]
-        def my_constraint2(q, q_dot, u, ee_pos):
+        def my_constraint2(q, q_dot, u, ee_pos, qq_dot):
             return [-4, -4], q_dot, [4, 4]
-        def my_constraint3(q, q_dot, u, ee_pos):
+        def my_constraint3(q, q_dot, u, ee_pos, qq_dot):
             return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
         my_constraints=[my_constraint1, my_constraint2, my_constraint3]
         
-        def my_final_constraint1(q, q_dot, u, ee_pos):
+        def my_final_constraint1(q, q_dot, u, ee_pos), qq_dot:
             return [1, 1], q, [1, 1]
-        def my_final_constraint2(q, q_dot, u, ee_pos):
+        def my_final_constraint2(q, q_dot, u, ee_pos, qq_dot):
             return [0.757324, 0.2, 2.43627], ee_pos, [0.757324, 0.2, 2.43627]
         my_final_constraints = [my_final_constraint1]
 

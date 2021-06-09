@@ -31,9 +31,10 @@ class Robot:
         self.num_joints = self.get_joints_n()
         self.define_symbolic_vars()
         self.M, self.Cq, self.G = self.get_motion_equation_matrix()
-        self.ee_pos = self.get_forward_kinematics()
         self.M_inv = cs.pinv(self.M)
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
+        self.ee_pos = self.get_forward_kinematics()
+        self.q_ddot_val = self.get_joints_accelerations()
         
         # Fix boundaries if not given
         self.upper_u, self.lower_u = self.format_properly(self.max_effort)
@@ -59,6 +60,7 @@ class Robot:
         self.q_dot = cs.SX.sym("q_dot", self.num_joints)
         self.u = cs.SX.sym("u", self.num_joints) 
         self.ee = cs.SX.sym("ee", 1)
+        self.q_ddot = cs.SX.sym("q_ddot", self.num_joints)
     def get_motion_equation_matrix(self):
         # load inertia terms (function)
         self.M_sym = self.robot_parser.get_inertia_matrix_crba(self.root, self.tip)
@@ -77,6 +79,10 @@ class Robot:
         ee = FK_sym(dummy_sym)[0:3,3]
         ee_pos = cs.Function('ee_pos', [dummy_sym], [ee])
         return ee_pos
+    def get_joints_accelerations(self):
+        joints_acc = self.M_inv@(-self.Cq -self.G -self.Fd@self.q_dot -self.Ff@cs.sign(self.q_dot))
+        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot], [joints_acc])
+        return q_ddot_val
     def get_limits(self):
         _, self.actuated_list, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
@@ -293,11 +299,12 @@ class Problem:
             lbg += [0] * (2*self.num_state_var)
             ubg += [0] * (2*self.num_state_var)
             
-            # get forward kinematics
+            # get forward kinematics and joints accelerations
             EEk_pos = self.ee_pos(Xk[0:self.num_joints])
+            Q_ddot = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints+1:])
             # add custom constraints
             if my_constraints != None:
-                self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, my_constraints)
+                self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, Q_ddot, my_constraints)
     
         if isinstance(self.T, cs.casadi.MX):
             w += [self.T]
@@ -310,7 +317,7 @@ class Problem:
             J = J+final_term_cost(Xk_end[0:self.num_joints]-cs.substitute(self.traj,self.t,self.T), Xk_end[self.num_joints:]-cs.substitute(self.traj_dot,self.t,self.T), Uk) # f_t_c(q, qd, u)    
             
         if self.my_final_constraint != None:
-            self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, self.my_final_constraint)
+            self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, Q_ddot, self.my_final_constraint)
             
         # Define the problem to be solved
         problem = {'f': J, 'x': cs.vertcat(*w), 'g': cs.vertcat(*g)}
@@ -341,9 +348,9 @@ class Problem:
             self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
             
 
-    def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_,  my_constraints_):
+    def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_, Q_ddot_, my_constraints_):
         for constraint in my_constraints_:
-            l_bound, f_bound, u_bound = constraint(Xk_[0:self.num_joints], Xk_[self.num_joints:], Uk_, EEk_pos_)
+            l_bound, f_bound, u_bound = constraint(Xk_[0:self.num_joints], Xk_[self.num_joints:], Uk_, EEk_pos_, Q_ddot_)
             if not isinstance(f_bound, list): f_bound = [f_bound]
             if not isinstance(l_bound, list): l_bound = [l_bound]
             if not isinstance(u_bound, list): u_bound = [u_bound]
@@ -402,18 +409,20 @@ if __name__ == '__main__':
         return 10*cs.mtimes(q_f.T,q_f)  #+ cs.mtimes(qd_f.T,qd_f)
     
         
-    def my_constraint1(q, q_dot, u, ee_pos):
+    def my_constraint1(q, q_dot, u, ee_pos, q_ddot):
         return [-10, -10], u, [10, 10]
-    def my_constraint2(q, q_dot, u, ee_pos):
+    def my_constraint2(q, q_dot, u, ee_pos, q_ddot):
         return [-4, -4], q_dot, [4, 4]
-    def my_constraint3(q, q_dot, u, ee_pos):
+    def my_constraint3(q, q_dot, u, ee_pos, q_ddot):
         return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
-    my_constraints=[my_constraint1, my_constraint2, my_constraint3]
+    def my_constraint4(q, q_dot, u, ee_pos, q_ddot):
+        return [-20], q_ddot, [20]
+    my_constraints=[my_constraint1, my_constraint2, my_constraint3, my_constraint4]
     
     
-    def my_final_constraint1(q, q_dot, u, ee_pos):
+    def my_final_constraint1(q, q_dot, u, ee_pos, q_ddot):
         return [1, 1], q, [1, 1]
-    def my_final_constraint2(q, q_dot, u, ee_pos):
+    def my_final_constraint2(q, q_dot, u, ee_pos, q_ddot):
         return [0.757324, 0.2, 2.43627], ee_pos, [0.757324, 0.2, 2.43627]
     my_final_constraints = [my_final_constraint1]
 
