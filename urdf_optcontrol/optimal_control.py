@@ -34,7 +34,6 @@ class Robot:
         self.M_inv = cs.pinv(self.M)
         self.upper_q, self.lower_q, self.max_effort, self.max_velocity = self.get_limits()
         self.ee_pos = self.get_forward_kinematics()
-        self.q_ddot_val = self.get_joints_accelerations()
         
         # Fix boundaries if not given
         self.upper_u, self.lower_u = self.format_properly(self.max_effort)
@@ -79,10 +78,6 @@ class Robot:
         ee = FK_sym(dummy_sym)[0:3,3]
         ee_pos = cs.Function('ee_pos', [dummy_sym], [ee])
         return ee_pos
-    def get_joints_accelerations(self):
-        joints_acc = self.M_inv@(-self.Cq -self.G -self.Fd@self.q_dot -self.Ff@cs.sign(self.q_dot))
-        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot], [joints_acc])
-        return q_ddot_val
     def get_limits(self):
         _, self.actuated_list, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
@@ -171,6 +166,7 @@ class Problem:
 
         # Working it up
         self.f = self.get_diff_eq(self.cost_func, self.traj)
+        self.q_ddot_val = self.get_joints_accelerations()
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
         self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
         self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'u': self.u_opt, 'T': self.T_opt}  
@@ -179,14 +175,14 @@ class Problem:
         # Right Hand side of differential equations!
         RHS = []
         rhs1 = self.q_dot
-        rhs2 = self.M_inv@(-self.Cq -self.G -self.Fd@self.q_dot -self.Ff@cs.sign(self.q_dot))
+        self.rhs2 = self.M_inv@(-self.Cq -self.G -self.Fd@self.q_dot -self.Ff@cs.sign(self.q_dot))
         
         if self.sea and self.areMotor: # Modeling both SEA and motor inertia
             # Right Hand Side of differential equations
-            rhs2 += -self.M_inv@self.tau_sea
+            self.rhs2 += -self.M_inv@self.tau_sea
             rhs3 = self.theta_dot
             rhs4 = cs.pinv(self.B)@(-self.FDsea@self.q_dot +self.u +self.tau_sea)
-            RHS = [rhs1, rhs2, rhs3, rhs4]
+            RHS = [rhs1, self.rhs2, rhs3, rhs4]
             # State  variable
             self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
             self.num_state_var = self.num_joints*2
@@ -196,16 +192,16 @@ class Problem:
             self.upper_qd = self.upper_qd*2
             
         elif self.sea and not self.areMotor: # Modeling only SEA 
-            rhs2 += -self.M_inv@self.K@(self.q - self.u)
+            self.rhs2 += -self.M_inv@self.K@(self.q - self.u)
             self.upper_u, self.lower_u = self.upper_q, self.lower_q
-            RHS = [rhs1, rhs2]
+            RHS = [rhs1, self.rhs2]
             # State  variable
             self.x = cs.vertcat(self.q, self.q_dot)
             self.num_state_var = self.num_joints
             
         else:   # No SEA nor motor inertias
-            rhs2 += self.M_inv@self.u
-            RHS = [rhs1, rhs2]
+            self.rhs2 += self.M_inv@self.u
+            RHS = [rhs1, self.rhs2]
             # State  variable
             self.x = cs.vertcat(self.q, self.q_dot)
             self.num_state_var = self.num_joints
@@ -216,6 +212,11 @@ class Problem:
         f = cs.Function('f', [self.x, self.u, self.t],    # inputs
                              [self.x_dot, J_dot])  # outputs
         return f
+    def get_joints_accelerations(self):
+        joints_acc = self.rhs2
+        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.u], [joints_acc])
+        return q_ddot_val
+        
     def rk4(self, f, T, N, m):
         Trk4 = cs.MX.sym('Trk4', 1)
         dt = T/N/m
@@ -301,7 +302,7 @@ class Problem:
             
             # get forward kinematics and joints accelerations
             EEk_pos = self.ee_pos(Xk[0:self.num_joints])
-            Q_ddot = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2*self.num_joints])
+            Q_ddot = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2*self.num_joints], Uk)
             # add custom constraints
             if my_constraints != None:
                 self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, Q_ddot, my_constraints)
