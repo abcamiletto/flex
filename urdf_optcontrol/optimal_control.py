@@ -169,7 +169,7 @@ class Problem:
         self.q_ddot_val = self.get_joints_accelerations()
         self.F = self.rk4(self.f, self.T, self.N, self.rk_intervals)
         self.nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.my_constraint)
-        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'u': self.u_opt, 'T': self.T_opt}  
+        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'qdd': self.qdd_opt, 'u': self.u_opt, 'T': self.T_opt}  
             
     def get_diff_eq(self, cost_func, traj):
         # Right Hand side of differential equations!
@@ -347,7 +347,22 @@ class Problem:
             self.q_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
             self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
             self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
+            self.qdd_opt = self.evaluate_qdd_opt()
             
+            
+    def evaluate_qdd_opt(self):
+        qdd_opt = [(self.q_ddot_val(self.q_opt[int(idx/self.N)][idx%self.N], self.qd_opt[int(idx/self.N)][idx%self.N], self.u_opt[int(idx/self.N)][idx%self.N])).full() for idx in range(self.N*self.num_joints)] # evaluate qdd and tranform to np.array
+        qdd_opt_flat = [item[0] for sublist in qdd_opt for item in sublist] # flat the array
+        return [qdd_opt_flat[idx::self.num_joints]for idx in range(self.num_joints)] # group according to joint
+        
+        # qdd_list = []
+        # for idx in range(self.N):   # for every instant
+        #    q = cs.vertcat(self.q_opt[0][idx], self.q_opt[1][idx], self.q_opt[2][idx])      # load the
+        #   qd = cs.vertcat(self.qd_opt[0][idx], self.qd_opt[1][idx], self.qd_opt[2][idx])
+        #    u = cs.vertcat(self.u_opt[0][idx], self.u_opt[1][idx], self.u_opt[2][idx])
+        #     qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()
+        #     qdd_list = qdd_list+qdd
+        # return [qdd_list[idx::self.num_joints]for idx in range(self.num_joints)]
 
     def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_, Q_ddot_, my_constraints_):
         for constraint in my_constraints_:
