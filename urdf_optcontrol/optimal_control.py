@@ -351,18 +351,14 @@ class Problem:
             
             
     def evaluate_qdd_opt(self):
-        qdd_opt = [(self.q_ddot_val(self.q_opt[int(idx/self.N)][idx%self.N], self.qd_opt[int(idx/self.N)][idx%self.N], self.u_opt[int(idx/self.N)][idx%self.N])).full() for idx in range(self.N*self.num_joints)] # evaluate qdd and tranform to np.array
-        qdd_opt_flat = [item[0] for sublist in qdd_opt for item in sublist] # flat the array
-        return [qdd_opt_flat[idx::self.num_joints]for idx in range(self.num_joints)] # group according to joint
-        
-        # qdd_list = []
-        # for idx in range(self.N):   # for every instant
-        #    q = cs.vertcat(self.q_opt[0][idx], self.q_opt[1][idx], self.q_opt[2][idx])      # load the
-        #   qd = cs.vertcat(self.qd_opt[0][idx], self.qd_opt[1][idx], self.qd_opt[2][idx])
-        #    u = cs.vertcat(self.u_opt[0][idx], self.u_opt[1][idx], self.u_opt[2][idx])
-        #     qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()
-        #     qdd_list = qdd_list+qdd
-        # return [qdd_list[idx::self.num_joints]for idx in range(self.num_joints)]
+        qdd_list = []
+        for idx in range(self.N):   # for every instant
+            q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)]) # load joints opt values
+            qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
+            u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
+            qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist() # transform to list
+            qdd_list = qdd_list+qdd
+        return [qdd_list[idx::self.num_joints]for idx in range(self.num_joints)] # according to joints
 
     def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_, Q_ddot_, my_constraints_):
         for constraint in my_constraints_:
