@@ -347,14 +347,14 @@ class Problem:
             self.q_opt = [opt[idx::3*self.num_joints]for idx in range(self.num_joints)]
             self.qd_opt = [opt[self.num_joints+idx::3*self.num_joints]for idx in range(self.num_joints)]
             self.u_opt = [opt[self.num_joints*2+idx::3*self.num_joints]for idx in range(self.num_joints)]
-            self.qdd_opt = self.evaluate_qdd_opt()
+        self.qdd_opt = self.evaluate_qdd_opt()
             
             
     def evaluate_qdd_opt(self):
         qdd_list = []
         for idx in range(self.N):   # for every instant
-            q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)]) # load joints opt values
-            qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
+            q = cs.vertcat(*[self.q_opt[idx2][idx+1] for idx2 in range(self.num_joints)]) # load joints opt values
+            qd = cs.vertcat(*[self.qd_opt[idx2][idx+1] for idx2 in range(self.num_joints)])
             u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
             qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist() # transform to list
             qdd_list = qdd_list+qdd
