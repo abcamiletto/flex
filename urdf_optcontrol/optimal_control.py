@@ -272,12 +272,8 @@ class Problem:
             w_g += [0] * self.num_joints  # initial guess
             
             # Add inequality constraint on inputs
-            if self.sea and not self.areMotor and k == 0: # IN THIS CASE U IS THETA AND WE NEED IT TO MATCH Q AT TIME ZERO
-                lbw += self.initial_cond[:self.num_joints]    
-                ubw += self.initial_cond[:self.num_joints]     
-            else:
-                lbw += self.lower_u       # lower bound on u
-                ubw += self.upper_u       # upper bound on u
+            lbw += self.lower_u       # lower bound on u
+            ubw += self.upper_u       # upper bound on u
             
             # Integrate till the end of the interval
             Fk = self.F(x0=Xk, p=Uk, time=dt*k)     #That's the actual integration!
@@ -285,18 +281,18 @@ class Problem:
             J  = J+Fk['qf']
     
             # New NLP variable for state at end of interval
-            Xk = cs.MX.sym('X_' + str(k+1), 2*self.num_state_var)
-            w  += [Xk]
+            Xk_new = cs.MX.sym('X_' + str(k+1), 2*self.num_state_var)
+            w  += [Xk_new]
             w_g += [0] * (2*self.num_state_var) # initial guess
             
             # Add inequality constraint on state
             lbw += self.lower_q      # lower bound on q
-            lbw += self.lower_qd #lower bound on q_dot
+            lbw += self.lower_qd # lower bound on q_dot
             ubw += self.upper_q      # upper bound on q
             ubw += self.upper_qd # upper bound on q_dot
 
             # Add equality constraint
-            g   += [Xk_end-Xk]
+            g   += [Xk_end-Xk_new]
             lbg += [0] * (2*self.num_state_var)
             ubg += [0] * (2*self.num_state_var)
             
@@ -306,6 +302,8 @@ class Problem:
             # add custom constraints
             if my_constraints != None:
                 self.add_constraints(g, lbg, ubg, Xk, Uk, EEk_pos, Q_ddot, my_constraints)
+            # update Xk
+            Xk = Xk_new
     
         if isinstance(self.T, cs.casadi.MX):
             w += [self.T]
@@ -362,7 +360,7 @@ class Problem:
 
     def add_constraints(self, g_, lbg_, ubg_, Xk_, Uk_, EEk_pos_, Q_ddot_, my_constraints_):
         for constraint in my_constraints_:
-            l_bound, f_bound, u_bound = constraint(Xk_[0:self.num_joints], Xk_[self.num_joints:], Uk_, EEk_pos_, Q_ddot_)
+            l_bound, f_bound, u_bound = constraint(Xk_[0:self.num_joints], Xk_[self.num_joints:2*self.num_joints], Uk_, EEk_pos_, Q_ddot_)
             if not isinstance(f_bound, list): f_bound = [f_bound]
             if not isinstance(l_bound, list): l_bound = [l_bound]
             if not isinstance(u_bound, list): u_bound = [u_bound]
