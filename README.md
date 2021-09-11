@@ -1,10 +1,8 @@
 # From URDF to Optimal Control
 Here we offer an easy to use library that allows you to do optimal control of a given robot, via urdf.
-The optimal control we offer is based on a trajectory target in fixed time.
+Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of,
 
 ## Installation Guide
-We suppose you have already installed ROS in your system, but it should work anyway.
-
 We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
 
 ```bash
@@ -12,7 +10,8 @@ git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontr
 ./install.sh
 ```
 
-The needed dependencies are (automatically installed with previous command):
+The needed dependencies are automatically installed with previous command
+For a custom installation, just the two following commands are needed:
 
 1. casadi
 
@@ -29,79 +28,71 @@ pip install .
 ```
 
 
-To see if it's working, run the python file in the example folder
+To see if it's working, run of the python files in the example folder.
 
 
 ## Example of usage
 ```python
 #!/usr/bin/env python3
-from urdf_optcontrol import optimizer
-from matplotlib import pyplot as plt
+from urdf2optcontrol import optimizer
+from matplotlib import pyplot as plt 
 
 # URDF options
-urdf_path = '/path/to/urdf/file'
+urdf_path = './urdf/rrbot.urdf'
 root = 'link1'
 end = 'link3'
 
 
 # The trajectory in respect we want to minimize the cost function
-# If qdot isn't given, it will be obtained with differentiation from q
+# If qd isn't given, it will be obtained with differentiation from q
 def trajectory_target_(t):
     q = [t] * 2
-    qdot = [0] * 2
-    return (q, qdot)
+    return q
 
 # Our cost function
 def my_cost_func(q, qd, u, t):
-    return 10*q.T@q + u.T@u/10
-
-# Our final term to be added at the end to our cost function
-def my_final_term_cost(q_f, qd_f, u_f):
-    return 10*q_f.T@q_f
+    return 100*q.T@q + u.T@u/10
 
 # Additional Constraints I may want to set
-def my_constraint1(q, q_dot, u, ee_pos, qq_dot):
-    return [-10, -10], u, [10, 10]
-def my_constraint2(q, q_dot, u, ee_pos, qq_dot):
-    return [-4, -4], q_dot, [4, 4]
-def my_constraint3(q, q_dot, u, ee_pos, qq_dot):
-    return 0, ee_pos[0]**2 + ee_pos[1]**2 + ee_pos[2]**2, 20
-def my_constraint4(q, q_dot, u, ee_pos, qq_dot):
-    return [-20, -20], qq_dot, [20, 20]
-my_constraints=[my_constraint1, my_constraint2, my_constraint3, my_constraint4]
+def my_constraint1(q, q_d, q_dd, u, ee_pos):
+    return [-30, -30], u, [30, 30]
+def my_constraint2(q, q_d, q_dd, u, ee_pos):
+    return [-15, -15], q_dd, [15, 15]
+my_constraints=[my_constraint1, my_constraint2]
 
 # Constraints to be imposed on the final instant of the simulation
 # e.g. impose a value of 1 radiant for both the joints
-def my_final_constraint1(q, q_dot, u, ee_pos, qq_dot):
+def my_final_constraint1(q, q_d, q_dd, u, ee_pos):
     return [1, 1], q, [1, 1]
-my_final_constraints = [my_final_constraint1]    # if not set, it is free (and optimized)
+my_final_constraints = [my_final_constraint1] 
 
-# Initial Condition in terms of q, qdot
+# Initial Condition in terms of q, qd
 in_cond = [0,0] + [0,0]
 
 # Optimization parameters
-steps = 50
+steps = 35
 time_horizon = 1    # if not set, it is free (and optimized)
 
 # Load the urdf and calculate the differential equations
 optimizer.load_robot(urdf_path, root, end)
 
-# Solve an optimal problem with above parameters
-# Results will be a dictionary with q, qd, u as keys
-res = optimizer.load_problem(
+# Loading the problem conditions
+optimizer.load_problem(
     my_cost_func,
     steps,
     in_cond,
-    trajectory_target_,
+    trajectory_target = trajectory_target_,
     time_horizon=time_horizon,
-    final_term_cost=my_final_term_cost, 
-    my_constraint=my_constraints, 
-    my_final_constraint=my_final_constraints,
-    max_iter=70
+    constraints=my_constraints, 
+    final_constraints=my_final_constraints,
+    max_iter=500
     )
 
+# Solving the non linear problem
+optimizer.solve()
+
 # Print the results!
-fig = optimizer.show_result()
+fig = optimizer.plot_result()
 plt.show()
 ```
 
@@ -122,7 +113,7 @@ Second Round
 
 - [x] Easy UI for algebraic constraints
 - [x] Auto Parsing of *max_velocity* and *max_effort*
-- [x] Friction and Damping modeling --- *numerical problems*
+- [x] Friction and Damping modeling 
 - [x] URDF parsing to get joint stiffness 
 - [x] Control over trajectory derivative
 - [x] Installation Guide
