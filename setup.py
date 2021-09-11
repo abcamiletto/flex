@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.1'
+VERSION = '1.1.2'
 DESCRIPTION = 'Get optimal control from URDF'
 
 # Setting up
 setup(
-    name="urdf_optcontrol",
+    name="urdf2optcontrol",
     version=VERSION,
     author="Andrea Boscolo Camiletto, Marco Biasizzo",
     author_email="<abcamiletto@gmail.com>, <marco.biasizzo@outlook.it>",

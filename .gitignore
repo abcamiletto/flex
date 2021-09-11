@@ -1,8 +1,6 @@
-# Personal
-urdf/rrbot_2arms.urdf
-
 # Editors
 .vscode/
+.code-workspace
 .idea/
 
 # Vagrant
@@ -38,6 +36,7 @@ parts/
 sdist/
 var/
 wheels/
+debug/
 *.egg-info/
 .installed.cfg
 *.egg
