@@ -38,9 +38,6 @@ class Problem:
         # Calculating the differential equations
         self.f = self._get_diff_eq(self.cost_func)
 
-        # Evaluating q_ddot, in order to handle it when given as an input of cost function or constraints
-        self.q_ddot_val = self._get_joints_accelerations()
-
         # Rewriting the differential equation symbolically with Range-Kutta 4th order
         self.F = self._rk4(self.f, self.T, self.N, self.rk_intervals)
 
@@ -93,12 +90,18 @@ class Problem:
             self.x = cs.vertcat(self.q, self.q_dot)
             self.num_state_var = self.num_joints
 
-        # Storing RHS2 for calculating the accelerations
-        self.rhs2 = rhs2
+        # Evaluating q_ddot, in order to handle it when given as an input of cost function or constraints
+        self.q_ddot_val = self._get_joints_accelerations(rhs2)
 
         # The differentiation of J will be the cost function given by the user, with our symbolic 
         # variables as inputs
-        J_dot = cost_func(self.q - self.traj, self.q_dot - self.traj_dot, self.u, self.t)
+        J_dot = cost_func(  self.q - self.traj,
+                            self.q_dot - self.traj_dot,
+                            self.q_ddot_val(self.q,self.q_dot, self.u),
+                            self.ee_pos(self.q),
+                            self.u,
+                            self.t
+        )
 
         # Setting the relationship
         self.x_dot = cs.vertcat(*RHS)
@@ -109,11 +112,9 @@ class Problem:
 
         return f
 
-    def _get_joints_accelerations(self):
+    def _get_joints_accelerations(self, rhs2):
         '''Returns a CASaDi function that maps the q_ddot from other joints info.'''
-
-        joints_acc = self.rhs2
-        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.u], [joints_acc])
+        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.u], [rhs2])
         return q_ddot_val
 
     def _rk4(self, f, T, N, m):
@@ -219,8 +220,13 @@ class Problem:
 
         # Add a final term cost. If not specified is 0.
         if final_term_cost is not None:
+            Q_dd = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], np.array([0]*self.num_joints))
+            EE_pos = self.ee_pos(Xk[0:self.num_joints])
+            
             J = J + final_term_cost(Xk[0:self.num_joints] - cs.substitute(self.traj, self.t, self.T),
                                     Xk[self.num_joints:] - cs.substitute(self.traj_dot, self.t, self.T),
+                                    Q_dd,
+                                    EE_pos,
                                     Uk)
 
         # Adding constraint on final timestep
@@ -247,7 +253,7 @@ class Problem:
 
         for constraint in constraints:
             l_bound, f_bound, u_bound = constraint(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
-                                                   Q_ddot_, Uk, EEk_pos_)
+                                                   Q_ddot_, EEk_pos_, Uk)
 
             if not isinstance(f_bound, list): f_bound = [f_bound]
             if not isinstance(l_bound, list): l_bound = [l_bound]

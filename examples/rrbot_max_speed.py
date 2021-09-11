@@ -14,23 +14,23 @@ def trajectory_target(t):
 in_cond = [0]*4
 
 
-def my_cost_func(q, qd, u, t):
+def my_cost_func(q, qd, qdd, ee_pos, u, t):
     return u.T@u / 2000
-def my_final_term_cost(q_f, qd_f, u_f):
-    return (-np.sin(q_f[0])*qd_f[0] -np.sin(q_f[1])*qd_f[1])
+def my_final_term_cost(qf, qdf, qddf, ee_posf, uf):
+    return (-np.sin(qf[0])*qdf[0] -np.sin(qf[1])*qdf[1])
 
-def my_constraint1(q, q_dot, u, ee_pos, q_ddot):
+def my_constraint1(q, qd, qdd, ee_pos, u):
     return [-30, -30], u, [30, 30]
-def my_constraint2(q, q_dot, u, ee_pos, q_ddot):
-    return [-4, -4], q_dot, [4, 4]
+def my_constraint2(q, qd, qdd, ee_pos, u):
+    return [-4, -4], qd, [4, 4]
 my_constraints = [my_constraint1, my_constraint2]
 
 
-def my_final_constraint1(q, q_dot, u, ee_pos, q_ddot):
+def my_final_constraint1(q, qd, qdd, ee_pos, u):
     return [3.14/2, 0], q, [3.14/2, 0]
 
-def my_final_constraint2(q, q_dot, u, ee_pos, q_ddot):
-    return [0, 0], q_dot, [0, 0]
+def my_final_constraint2(q, qd, qdd, ee_pos, u):
+    return [0, 0], qd, [0, 0]
 
 
 my_final_constraints = [my_final_constraint1]

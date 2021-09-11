@@ -15,19 +15,19 @@ def trajectory_target_(t):
     return q
 
 # Our cost function
-def my_cost_func(q, qd, u, t):
-    return 100*q.T@q + u.T@u/10
+def my_cost_func(q, qd, qdd, ee_pos, u, t):
+    return q.T@q + qdd.T@qdd/10
 
 # Additional Constraints I may want to set
-def my_constraint1(q, q_d, q_dd, u, ee_pos):
+def my_constraint1(q, qd, qdd, ee_pos, u):
     return [-30, -30], u, [30, 30]
-def my_constraint2(q, q_d, q_dd, u, ee_pos):
-    return [-15, -15], q_dd, [15, 15]
+def my_constraint2(q, qd, qdd, ee_pos, u):
+    return [-15, -15], qdd, [15, 15]
 my_constraints=[my_constraint1, my_constraint2]
 
 # Constraints to be imposed on the final instant of the simulation
 # e.g. impose a value of 1 radiant for both the joints
-def my_final_constraint1(q, q_d, q_dd, u, ee_pos):
+def my_final_constraint1(q, qd, qdd, ee_pos, u):
     return [1, 1], q, [1, 1]
 my_final_constraints = [my_final_constraint1] 
 

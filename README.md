@@ -138,7 +138,7 @@ Fourth Round
 - [ ] Convert result to numpy array and make sure you can iterate on it
 - [x] Return T if we're minimizing it
 - [x] Desired trajectory as optional argument
-- [ ] Insert ee position and q acceleration in cost functions
+- [x] Insert ee position and q acceleration in cost functions
 
 
 To do or not to do?

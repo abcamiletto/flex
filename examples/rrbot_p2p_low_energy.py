@@ -10,21 +10,21 @@ end = "link3"
 # point to point low energy
 in_cond = [0]*4
 
-def my_cost_func(q, qd, u, t):
+def my_cost_func(q, qd, qdd, ee_pos, u, t):
     return u.T@u
 
 
-def my_constraint1(q, q_dot, u, ee_pos, q_ddot):
+def my_constraint1(q, qd, qdd, ee_pos, u):
     return [-30, -30], u, [30, 30]
-def my_constraint2(q, q_dot, u, ee_pos, q_ddot):
-    return [-4, -4], q_dot, [4, 4]
+def my_constraint2(q, qd, qdd, ee_pos, u):
+    return [-4, -4], qdd, [4, 4]
 my_constraints = [my_constraint1, my_constraint2]
 
 
-def my_final_constraint1(q, q_dot, u, ee_pos, q_ddot):
+def my_final_constraint1(q, qd, qdd, ee_pos, u):
     return [3.14/2, 0], q, [3.14/2, 0]
-def my_final_constraint2(q, q_dot, u, ee_pos, q_ddot):
-    return [0, 0], q_dot, [0, 0]
+def my_final_constraint2(q, qd, qdd, ee_pos, u):
+    return [0, 0], qdd, [0, 0]
 my_final_constraints = [my_final_constraint1, my_final_constraint2]
 
 time_horizon = 2
