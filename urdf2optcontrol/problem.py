@@ -224,7 +224,7 @@ class Problem:
             EE_pos = self.ee_pos(Xk[0:self.num_joints])
             
             J = J + final_term_cost(Xk[0:self.num_joints] - cs.substitute(self.traj, self.t, self.T),
-                                    Xk[self.num_joints:] - cs.substitute(self.traj_dot, self.t, self.T),
+                                    Xk[self.num_joints:2*self.num_joints] - cs.substitute(self.traj_dot, self.t, self.T),
                                     Q_dd,
                                     EE_pos,
                                     Uk)
