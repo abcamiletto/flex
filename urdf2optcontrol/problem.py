@@ -44,8 +44,6 @@ class Problem:
         # Setting up IPOPT non linear problem solver
         self._nlp_solver(self.initial_cond, self.final_term_cost, trajectory_target, self.constraints)
 
-        
-
     def _get_diff_eq(self, cost_func):
         '''Function that returns the RhS of the differential equations. See the papers for additional info'''
         
@@ -289,6 +287,8 @@ class Problem:
             self.T_opt = self.T
 
         # Rewriting the results in a more convenient way for both SEA and non SEA cases
+        # For 2 Joints and N timesteps results will be formatted as:
+        # [[Q0_0, Q0_1, ... Q0_N][Q1_0, Q1_1, ... Q1_N]] where Qi_j is the value of the ith joint at the jth timestep
         if self.sea and self.SEAinertia:
             self.q_opt = [opt[idx::(3 * (self.num_joints) + 2 * (self.num_joints))] for idx in range(self.num_joints)]
             self.qd_opt = [opt[self.num_joints + idx::(3 * (self.num_joints) + 2 * (self.num_joints))] for idx in
@@ -307,26 +307,27 @@ class Problem:
             self.u_opt = [opt[self.num_joints * 2 + idx::3 * self.num_joints] for idx in range(self.num_joints)]
 
         # Reconstructing q_ddot
-        self.qdd_opt = self.evaluate_qdd_opt()
+        self.qdd_opt, self.ee_opt = self.evaluate_opt()
 
         # Formatting the results
         self.result = { 'q': np.array(self.q_opt),
                         'qd': np.array(self.qd_opt),
                         'qdd': np.array(self.qdd_opt),
                         'u': np.array(self.u_opt),
-                        'T': np.array(self.T_opt)}
+                        'T': np.array(self.T_opt),
+                        'ee_pos': np.array(self.ee_opt)}
         return self.result
 
-    def evaluate_qdd_opt(self):
+    def evaluate_opt(self):
         '''Reconstructing all the values of q_ddot reached during the problem'''
-        qdd_list = []
         for idx in range(self.N):  # for every instant
             q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)])  # load joints opt values
             qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
             u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
             qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()  # transform to list
-            qdd_list = qdd_list + qdd
-        return [qdd_list[idx::self.num_joints] for idx in range(self.num_joints)]  # according to joints
+            qdd = [qdd[idx::self.num_joints] for idx in range(self.num_joints)] # format according to joints
+            ee = (self.ee_pos(q)).full().flatten().tolist()  # transform to list
+        return qdd, ee  # refactor according to joints
 
     def format_trajectory(self, traj, t):
         '''Function that formats the trajectory'''
