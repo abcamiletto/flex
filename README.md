@@ -135,7 +135,7 @@ Fourth Round
 - [x] Fix examples
 - [x] Modelling without motor inertias
 - [x] Add a method "solve" to optimizer instead of returning on load_problem
-- [ ] Convert result to numpy array and make sure you can iterate on it
+- [x] Convert result to numpy array and make sure you can iterate on it
 - [x] Return T if we're minimizing it
 - [x] Desired trajectory as optional argument
 - [x] Insert ee position and q acceleration in cost functions

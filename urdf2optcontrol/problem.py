@@ -310,7 +310,11 @@ class Problem:
         self.qdd_opt = self.evaluate_qdd_opt()
 
         # Formatting the results
-        self.result = {'q': self.q_opt, 'qd': self.qd_opt, 'qdd': self.qdd_opt, 'u': self.u_opt, 'T': self.T_opt}
+        self.result = { 'q': np.array(self.q_opt),
+                        'qd': np.array(self.qd_opt),
+                        'qdd': np.array(self.qdd_opt),
+                        'u': np.array(self.u_opt),
+                        'T': np.array(self.T_opt)}
         return self.result
 
     def evaluate_qdd_opt(self):
