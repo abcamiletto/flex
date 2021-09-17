@@ -85,7 +85,6 @@ class Robot:
         ee_pos = cs.Function('ee_pos', [dummy_sym], [ee])
         return ee_pos
 
-    
     def _fix_boundaries(self, item):
         '''Function that check whether the limits were set in the URDF, and if not, set them properly'''
         if item is None:
