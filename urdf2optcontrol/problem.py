@@ -310,23 +310,31 @@ class Problem:
         self.qdd_opt, self.ee_opt = self.evaluate_opt()
 
         # Formatting the results
-        self.result = { 'q': np.array(self.q_opt),
-                        'qd': np.array(self.qd_opt),
-                        'qdd': np.array(self.qdd_opt),
-                        'u': np.array(self.u_opt),
+        self.result = { 'q': self.q_opt,
+                        'qd': self.casadi2nparray(self.qd_opt),
+                        'qdd': self.casadi2nparray(self.qdd_opt),
+                        'u': self.casadi2nparray(self.u_opt),
                         'T': np.array(self.T_opt),
-                        'ee_pos': np.array(self.ee_opt)}
+                        'ee_pos': self.ee_opt}
         return self.result
+
+    def casadi2nparray(self, casadi_array):
+        list = [np.array(el).flatten() for el in casadi_array]
+        return np.array(list)
 
     def evaluate_opt(self):
         '''Reconstructing all the values of q_ddot reached during the problem'''
+        qdd_list = []; ee_list = []
         for idx in range(self.N):  # for every instant
             q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)])  # load joints opt values
             qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
             u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
             qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()  # transform to list
-            qdd = [qdd[idx::self.num_joints] for idx in range(self.num_joints)] # format according to joints
+            qdd_list = qdd_list + qdd
             ee = (self.ee_pos(q)).full().flatten().tolist()  # transform to list
+            ee_list = ee_list + ee
+        qdd = np.array([qdd_list[idx::self.num_joints] for idx in range(self.num_joints)])  # format according to joints
+        ee = np.array([ee_list[idx::3] for idx in range(3)])  # format according to joints
         return qdd, ee  # refactor according to joints
 
     def format_trajectory(self, traj, t):
