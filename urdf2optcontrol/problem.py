@@ -4,7 +4,7 @@ import numpy as np
 from math import ceil
 
 class Problem:
-    def __init__(self, robot, cost_func, control_steps, initial_cond, trajectory_target=None, time_horizon=cs.MX.sym("T", 1),
+    def __init__(self, robot, cost_func, control_steps, initial_cond, trajectory_target=None, time_horizon=None,
                  final_term_cost=None, constraints=None, final_constraints=None,
                  rk_interval=4, max_iter=1000):
         """ Solve method. Takes the problems conditions as input and set up its solution"""
@@ -22,7 +22,7 @@ class Problem:
         self.final_term_cost = final_term_cost
         self.constraints = constraints
         self.final_constraints = final_constraints
-        self.T = time_horizon
+        self.T = cs.MX.sym("T", 1) if time_horizon == None else time_horizon
         self.N = control_steps
         self.rk_intervals = rk_interval
         self.max_iter = max_iter
@@ -281,7 +281,7 @@ class Problem:
 
         # If we solved for minimum T, then let's update the results
         if isinstance(self.T, cs.casadi.MX):
-            self.T_opt = opt[-1]
+            self.T_opt = np.single(opt[-1]).flatten()
             opt = opt[0:-1]
         else:
             self.T_opt = self.T
@@ -310,15 +310,16 @@ class Problem:
         self.qdd_opt, self.ee_opt = self.evaluate_opt()
 
         # Formatting the results
-        self.result = { 'q': self.q_opt,
+        self.result = { 'q': self.casadi2nparray(self.q_opt),
                         'qd': self.casadi2nparray(self.qd_opt),
-                        'qdd': self.casadi2nparray(self.qdd_opt),
+                        'qdd': self.qdd_opt,
                         'u': self.casadi2nparray(self.u_opt),
-                        'T': np.array(self.T_opt),
+                        'T': self.T_opt,
                         'ee_pos': self.ee_opt}
         return self.result
 
     def casadi2nparray(self, casadi_array):
+        '''Convert Casadi MX vectors (optimal solutions) in numpy arrays'''
         list = [np.array(el).flatten() for el in casadi_array]
         return np.array(list)
 
