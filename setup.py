@@ -9,10 +9,10 @@ setup(
     version=VERSION,
     author="Andrea Boscolo Camiletto, Marco Biasizzo",
     author_email="<abcamiletto@gmail.com>, <marco.biasizzo@outlook.it>",
-    url="https://github.com/abcamiletto/urdf_optcontrol",
+    url="https://github.com/abcamiletto/urdf2optcontrol",
     description=DESCRIPTION,
     packages=find_packages(),
-    install_requires=['casadi', 'numpy', 'matplotlib'],
+    install_requires=['casadi', 'numpy>=1.21', 'matplotlib'],
     keywords=['python', 'optimal_control', 'robotics', 'robots'],
     classifiers=[
         "Topic :: Scientific/Engineering :: Mathematics"
