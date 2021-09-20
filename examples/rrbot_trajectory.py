@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 from urdf2optcontrol import optimizer
 from matplotlib import pyplot as plt 
+import pathlib
 
 # URDF options
-urdf_path = './urdf/rrbot.urdf'
+urdf_path = pathlib.Path(__file__).parent.joinpath('urdf', 'rrbot.urdf').absolute()
 root = "link1"
 end = "link3"
 
