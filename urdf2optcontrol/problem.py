@@ -93,9 +93,13 @@ class Problem:
 
         # The differentiation of J will be the cost function given by the user, with our symbolic 
         # variables as inputs
+        if self.sea and self.SEAinertia:
+            q_ddot_J = self.q_ddot_val(self.q, self.q_dot, self.theta, self.theta_dot, self.u)
+        else:
+            q_ddot_J = self.q_ddot_val(self.q,self.q_dot, self.u)
         J_dot = cost_func(  self.q - self.traj,
                             self.q_dot - self.traj_dot,
-                            self.q_ddot_val(self.q,self.q_dot, self.u),
+                            q_ddot_J,
                             self.ee_pos(self.q),
                             self.u,
                             self.t
@@ -112,7 +116,11 @@ class Problem:
 
     def _get_joints_accelerations(self, rhs2):
         '''Returns a CASaDi function that maps the q_ddot from other joints info.'''
-        q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.u], [rhs2])
+        if self.sea and self.SEAinertia:
+            q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.theta, self.theta_dot, self.u],
+                                     [rhs2])
+        else:
+            q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.u], [rhs2])
         return q_ddot_val
 
     def _rk4(self, f, T, N, m):
@@ -218,7 +226,11 @@ class Problem:
 
         # Add a final term cost. If not specified is 0.
         if final_term_cost is not None:
-            Q_dd = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], np.array([0]*self.num_joints))
+            if self.sea and self.SEAinertia:
+                Q_dd = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
+                                       Xk[2*self.num_joints:3*self.num_joints], Xk[3*self.num_joints:4*self.num_joints], np.array([0]*self.num_joints))
+            else:
+                Q_dd = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], np.array([0]*self.num_joints))
             EE_pos = self.ee_pos(Xk[0:self.num_joints])
             
             J = J + final_term_cost(Xk[0:self.num_joints] - cs.substitute(self.traj, self.t, self.T),
@@ -247,7 +259,12 @@ class Problem:
             Uk = np.array([0]*self.num_joints)
 
         EEk_pos_ = self.ee_pos(Xk[0:self.num_joints])
-        Q_ddot_ = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], Uk)
+        if self.sea and self.SEAinertia:
+            Q_ddot_ = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
+                                     Xk[2 * self.num_joints:3 * self.num_joints],
+                                     Xk[3 * self.num_joints:4 * self.num_joints], Uk)
+        else:
+            Q_ddot_ = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], Uk)
 
         for constraint in constraints:
             l_bound, f_bound, u_bound = constraint(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
@@ -330,7 +347,12 @@ class Problem:
             q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)])  # load joints opt values
             qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
             u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
-            qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()  # transform to list
+            if self.sea and self.SEAinertia:
+                theta = cs.vertcat(*[self.theta_opt[idx2][idx] for idx2 in range(self.num_joints)])
+                theta_dot = cs.vertcat(*[self.thetad_opt[idx2][idx] for idx2 in range(self.num_joints)])
+                qdd = (self.q_ddot_val(q, qd, theta, theta_dot, u)).full().flatten().tolist()  # transform to list
+            else:
+                qdd = (self.q_ddot_val(q, qd, u)).full().flatten().tolist()  # transform to list
             qdd_list = qdd_list + qdd
             ee = (self.ee_pos(q)).full().flatten().tolist()  # transform to list
             ee_list = ee_list + ee
