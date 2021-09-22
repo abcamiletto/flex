@@ -19,7 +19,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
                     'wspace': 0.4,
                     'hspace': 0.4}
 
-    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(11,2.5*n_joints), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(11,2.8*n_joints), gridspec_kw=gridspec_kw)
+    fig.suptitle('Joints and Inputs', fontsize=14)
 
     for idx, ax in enumerate(axes):
         # Painting the boundaries
@@ -33,6 +34,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[0].legend('q_'+str(idx))
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
+        ax[0].set_title('q plot')
 
         # Painting the boundaries
         lb, ub = q_limits['qd'][0][idx], q_limits['qd'][1][idx]
@@ -43,10 +45,12 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[1].plot(tgrid, qd[idx], 'g-')
         ax[1].legend('qd_'+str(idx))
         ax[1].set_xlabel('time')
+        ax[1].set_title('qd plot')
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
         ax[2].legend('qdd_'+str(idx))
         ax[2].set_xlabel('time')
+        ax[2].set_title('qdd plot')
 
         lb, ub = q_limits['u'][0][idx], q_limits['u'][1][idx]
         if not isinf(lb) and not isinf(ub):
@@ -56,7 +60,9 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].plot(tgrid[:-1], u[idx], 'g-')
         ax[3].legend('ud_'+str(idx))
         ax[3].set_xlabel('time')
+        ax[3].set_title('u plot')
 
+    fig.subplots_adjust(top=0.88)
     return fig
 
 def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
@@ -66,7 +72,8 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
                     'hspace': 0.4}
     
     # Instantiating plot
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(6,4), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(7,5), gridspec_kw=gridspec_kw)
+    fig.suptitle('Cost Function', fontsize=14)
 
     # Refactor function for q and its derivatives to be [q0(0), q1(0), q2(0)],[q0(1), q1(1), q2(1)] etc
     ref = lambda q : [np.array([q[j][idx] for j in range(n_joints)]) for idx in range(len(q[0]))]
@@ -132,7 +139,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
 
         # Creating the plot
         lenght = len(value[0])
-        fig, axes = plt.subplots(nrows=1, ncols=lenght, figsize=(9,2))
+        fig, axes = plt.subplots(nrows=1, ncols=lenght, figsize=(9,3.5))
 
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
 
@@ -148,6 +155,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
             ax.set_xlim(tgrid[0], tgrid[-2])
             ax.set_xlabel('time')
             ax.set_title('Constraint '+str(idx)+ ' ' +str([n]))
-
+        fig.suptitle('Constraints n.' + str(idx), fontsize=14)
+        fig.tight_layout()
         figures.append(fig)
     return figures
