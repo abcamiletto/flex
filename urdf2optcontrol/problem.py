@@ -97,11 +97,15 @@ class Problem:
             q_ddot_J = self.q_ddot_val(self.q, self.q_dot, self.theta, self.theta_dot, self.u)
         else:
             q_ddot_J = self.q_ddot_val(self.q,self.q_dot, self.u)
+        if self.sea and not self.SEAinertia:
+            u_J = self.u - self.q # the instantaneous spent energy is prop to |u-q|
+        else:
+            u_J = self.u
         J_dot = cost_func(  self.q - self.traj,
                             self.q_dot - self.traj_dot,
                             q_ddot_J,
                             self.ee_pos(self.q),
-                            self.u,
+                            u_J,
                             self.t
         )
 
