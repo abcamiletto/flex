@@ -38,17 +38,17 @@ class Robot:
             self.SEAinertia = self.B.any()  # True when we're modeling also motor inertia
 
     @staticmethod
-    def _load_urdf(urdf_path):
+    def _load_urdf(urdf_path: str):
         '''Function that creates a parser and load the path'''
         robot_parser = u2c.URDFparser()
         robot_parser.from_file(urdf_path)
         return robot_parser
 
-    def get_joints_n(self):
+    def get_joints_n(self) -> int:
         '''Return the number of joints'''
         return self.robot_parser.get_n_joints(self.root, self.tip)
 
-    def _define_symbolic_vars(self):
+    def _define_symbolic_vars(self) -> None:
         '''Instantiating the main symbolic variables'''
         self.q = cs.SX.sym("q", self.num_joints)
         self.q_dot = cs.SX.sym("q_dot", self.num_joints)
@@ -70,7 +70,7 @@ class Robot:
 
         return self.M_sym(self.q), self.C_sym(self.q, self.q_dot), self.G_sym(self.q)
 
-    def get_limits(self):
+    def get_limits(self) -> list:
         '''Function that returns all the limits stored in the URDF'''
         _, self.actuated_list, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)

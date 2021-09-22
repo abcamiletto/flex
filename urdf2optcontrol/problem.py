@@ -2,6 +2,7 @@ import casadi as cs
 import matplotlib.pyplot as plt
 import numpy as np
 from math import ceil
+from .utils import show
 
 class Problem:
     def __init__(self, robot, cost_func, control_steps, initial_cond, trajectory_target=None, time_horizon=None,
@@ -380,25 +381,15 @@ class Problem:
 
     def plot_results(self):
         '''Displaying the results with matplotlib'''
-        tgrid = [self.T_opt / self.N * k for k in range(self.N + 1)]
-
-        fig, axes = plt.subplots(nrows=int(ceil(self.num_joints / 2)), ncols=2,
-                                 figsize=(15, 4 * ceil(self.num_joints / 2)))
-
-        for idx, ax in enumerate(fig.axes):
-            if idx < self.num_joints:
-                self.get_ax(ax, idx, tgrid)
-        return fig
-
-    def get_ax(self, ax, idx, tgrid):
-        '''Helper function to set up each graph'''
-        ax.plot(tgrid, self.q_opt[idx], '--')
-        ax.plot(tgrid, self.qd_opt[idx], '--')
-        ax.plot(tgrid[1:], self.u_opt[idx], '-.')
-        legend = ['q' + str(idx), 'q' + str(idx) + '_dot', 'u' + str(idx)]
-        if self.sea and self.SEAinertia:
-            ax.plot(tgrid, self.theta_opt[idx], '.')
-            ax.plot(tgrid, self.thetad_opt[idx], '.')
-            legend += ['theta' + str(idx), 'theta' + str(idx) + '_dot']
-        ax.legend(legend)
-        return ax
+        joint_limits = {
+            'q': (self.lower_q, self.upper_q),
+            'qd': (self.lower_qd, self.upper_qd),
+            'u': (self.lower_u, self.upper_u)
+        }
+        return show(**self.result,
+                    q_limits = joint_limits,
+                    steps = self.N,
+                    cost_func = self.cost_func,
+                    final_term = self.final_term_cost,
+                    constr = self.constraints,
+                    f_constr = self.final_constraints)
