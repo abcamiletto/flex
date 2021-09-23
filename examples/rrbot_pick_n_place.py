@@ -52,4 +52,4 @@ print('ee = ', res['ee_pos'])
 
 # Print the results!
 fig = optimizer.plot_result()
-plt.show()
+# plt.show()

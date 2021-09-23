@@ -9,7 +9,7 @@ import pathlib
 import sys
 import webbrowser
 
-def show(q, qd, qdd, q_limits, u, T, ee_pos, steps, cost_func, final_term, constr, f_constr):
+def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
     # Plotting Q and its derivatives
@@ -29,6 +29,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
     fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(11,2.8*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
 
+    if n_joints == 1: # list if not a list, to enumerate
+        axes = [axes]
     for idx, ax in enumerate(axes):
         # Painting the boundaries
         lb, ub = q_limits['q'][0][idx], q_limits['q'][1][idx]
@@ -148,6 +150,8 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
         lenght = len(value[0])
         fig, axes = plt.subplots(nrows=1, ncols=lenght, figsize=(9,3.5))
 
+        if n_joints == 1:  # list if not a list, to enumerate
+            axes = [axes]
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
 
         # Iterate trough each constraint along the time
