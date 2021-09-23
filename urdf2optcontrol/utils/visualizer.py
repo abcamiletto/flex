@@ -29,8 +29,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
     fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(11,2.8*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
 
-    if n_joints == 1: # list if not a list, to enumerate
-        axes = [axes]
+    if n_joints==1: axes = [axes] # make it a list for enumerate
     for idx, ax in enumerate(axes):
         # Painting the boundaries
         lb, ub = q_limits['q'][0][idx], q_limits['q'][1][idx]
@@ -40,7 +39,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
 
         # Plotting the values
         ax[0].plot(tgrid, q[idx], '-')
-        ax[0].legend('q_'+str(idx))
+        ax[0].legend('q'+str(idx))
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
         ax[0].set_title('q plot')
@@ -52,12 +51,12 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
             ax[1].axhspan(lb, ub, facecolor='w')
 
         ax[1].plot(tgrid, qd[idx], 'g-')
-        ax[1].legend('qd_'+str(idx))
+        ax[1].legend('qd'+str(idx))
         ax[1].set_xlabel('time')
         ax[1].set_title('qd plot')
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
-        ax[2].legend('qdd_'+str(idx))
+        ax[2].legend('qdd'+str(idx))
         ax[2].set_xlabel('time')
         ax[2].set_title('qdd plot')
 
@@ -133,7 +132,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
 
     # Refactoring functions
     ref_joint = lambda q : [np.array([q[j][idx] for j in range(n_joints)]) for idx in range(len(q[0]))]
-    ref_constr = lambda v : [np.array([array[i] for array in v]) for i in range(lenght)]
+    ref_constr = lambda v: [np.array([array[i] for array in v]) for i in range(length)]
 
     for idx, constraint in enumerate(constraints):
         
@@ -145,24 +144,27 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
         low_bound = np.array([instant[0] for instant in constr_plot])
         value = np.array([instant[1] for instant in constr_plot])
         high_bound = np.array([instant[2] for instant in constr_plot])
+        # trasform to array internal elements if necessary
+        if not isinstance(low_bound[0], np.ndarray): low_bound = np.array([[el] for el in low_bound])
+        if not isinstance(value[0], np.ndarray): value = np.array([[el] for el in value])
+        if not isinstance(high_bound[0], np.ndarray): high_bound = np.array([[el] for el in high_bound])
 
         # Creating the plot
-        lenght = len(value[0])
-        fig, axes = plt.subplots(nrows=1, ncols=lenght, figsize=(9,3.5))
+        length = len(value[0]) # colud be n_joints (if cnstraint is array) or T (in constr is scalar)
+        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(9,3.5))
 
-        if n_joints == 1:  # list if not a list, to enumerate
-            axes = [axes]
+        if length == 1: axes = [axes]
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
 
         # Iterate trough each constraint along the time
-        for n, (lb, value, ub, ax) in enumerate(iterator):
+        for n, (lb, val, ub, ax) in enumerate(iterator):
             ax.set_facecolor((1.0, 0.45, 0.4))
 
             # Painting the ok zone in white
             ax.fill_between(tgrid[:-1], lb, ub, color='w')
-            ax.plot(tgrid[:-1], low_bound, '-', color='tab:red')
-            ax.plot(tgrid[:-1], high_bound, '-', color='tab:red')
-            ax.plot(tgrid[:-1], value, '-')
+            ax.plot(tgrid[:-1], lb, '-', color='tab:red')
+            ax.plot(tgrid[:-1], ub, '-', color='tab:red')
+            ax.plot(tgrid[:-1], val, '-')
             ax.set_xlim(tgrid[0], tgrid[-2])
             ax.set_xlabel('time')
             ax.set_title('Constraint '+str(idx)+ ' ' +str([n]))
@@ -182,7 +184,7 @@ def generate_html(figure1_, figure2_, figure3_):
     html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3)
     
     # Write the HTML file
-    name, _ = sys.argv[0].split('.')
+    name, _ = sys.argv[0].split('.', 1)
     with open(name + '_report.html', 'w') as f:
         f.write(html)
     webbrowser.open_new(name + '_report.html')
