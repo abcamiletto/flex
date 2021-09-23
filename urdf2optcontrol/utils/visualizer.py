@@ -16,9 +16,10 @@ def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, const
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
     fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
+    final_results = eval_final_constr(q, qd, qdd, ee_pos, u, f_constr)
     if show:
         generate_html(fig1, fig2, fig3)
-    return [fig1, fig2, *fig3]
+    return [fig1, fig2, *fig3], f_constr
 
 def plot_q(q, qd, qdd, q_limits, u, tgrid):
     n_joints = len(q)
@@ -27,7 +28,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
                     'wspace': 0.4,
                     'hspace': 0.4}
 
-    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(11,2.8*n_joints), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(8,2.2*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
 
     if n_joints==1: axes = [axes] # make it a list for enumerate
@@ -85,7 +86,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
                     'hspace': 0.4}
     
     # Instantiating plot
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(7,5), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8,4), gridspec_kw=gridspec_kw)
     fig.suptitle('Cost Function', fontsize=14)
 
     # Refactor function for q and its derivatives to be [q0(0), q1(0), q2(0)],[q0(1), q1(1), q2(1)] etc
@@ -157,7 +158,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
 
         # Creating the plot
         length = len(value[0]) # colud be n_joints (if cnstraint is array) or T (in constr is scalar)
-        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(9,3.5))
+        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(8,3))
 
         if length == 1: axes = [axes]
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
@@ -179,6 +180,21 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
         fig.tight_layout()
         figures.append(fig)
     return figures
+
+def eval_final_constr(q, qd, qdd, ee_pos, u, fconstr):
+    # Function that returns the value of the last timestep
+    get_last = lambda x: np.array([x[i][-1] for i in range(len(q))])
+    # Retrieving the values at last timestep
+    qf = get_last(q)
+    qdf = get_last(qd)
+    qddf = get_last(qdd)
+    ee_posf = ee_pos[-1]
+    uf = get_last(u)
+    # Computing the final constraints values
+    results = []
+    for fcon in fconstr:
+        results.append(fcon(qf,qdf,qddf,ee_posf,uf))
+    return results
 
 def generate_html(figure1_, figure2_, figure3_):
     template_path = pathlib.Path(__file__).parent.absolute()
