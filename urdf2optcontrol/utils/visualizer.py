@@ -9,14 +9,15 @@ import pathlib
 import sys
 import webbrowser
 
-def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr):
+def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
     # Plotting Q and its derivatives
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
     fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
-    generate_html(fig1, fig2, fig3)
+    if show:
+        generate_html(fig1, fig2, fig3)
     return [fig1, fig2, *fig3]
 
 def plot_q(q, qd, qdd, q_limits, u, tgrid):
@@ -44,6 +45,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
         ax[0].set_title('q plot')
+        ax[0].grid()
 
         # Painting the boundaries
         lb, ub = q_limits['qd'][0][idx], q_limits['qd'][1][idx]
@@ -55,11 +57,13 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[1].legend('qd_'+str(idx))
         ax[1].set_xlabel('time')
         ax[1].set_title('qd plot')
+        ax[1].grid()
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
         ax[2].legend('qdd_'+str(idx))
         ax[2].set_xlabel('time')
         ax[2].set_title('qdd plot')
+        ax[2].grid()
 
         lb, ub = q_limits['u'][0][idx], q_limits['u'][1][idx]
         if not isinf(lb) and not isinf(ub):
@@ -70,6 +74,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].legend('ud_'+str(idx))
         ax[3].set_xlabel('time')
         ax[3].set_title('u plot')
+        ax[3].grid()
 
     fig.subplots_adjust(top=0.88)
     return fig
@@ -123,6 +128,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
     # Setting the labels
     axes.set_xlabel('time')
     axes.set_ylabel('cost function')
+    axes.grid()
     return fig
 
 def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
@@ -166,6 +172,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
             ax.set_xlim(tgrid[0], tgrid[-2])
             ax.set_xlabel('time')
             ax.set_title('Constraint '+str(idx)+ ' ' +str([n]))
+            ax.grid()
         fig.suptitle('Constraints n.' + str(idx), fontsize=14)
         fig.tight_layout()
         figures.append(fig)
