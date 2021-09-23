@@ -58,5 +58,4 @@ print('u = ', res['u'][0])
 print('q = ', res['q'][0])
 
 # Print the results!
-fig = optimizer.plot_result()
-plt.show()
+fig = optimizer.plot_result(show=True)

@@ -58,5 +58,4 @@ optimizer.load_problem(
 res = optimizer.solve()
 
 # Print the results!
-fig = optimizer.plot_result()
-plt.show()
+fig = optimizer.plot_result(show=True)
