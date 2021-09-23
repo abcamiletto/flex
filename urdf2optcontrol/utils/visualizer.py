@@ -194,6 +194,7 @@ def eval_final_constr(q, qd, qdd, ee_pos, u, fconstr):
     results = []
     for fcon in fconstr:
         results.append(fcon(qf,qdf,qddf,ee_posf,uf))
+    # Results are formatted as a list of [lower bound, actual value, upper bound]
     return results
 
 def generate_html(figure1_, figure2_, figure3_):
