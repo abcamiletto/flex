@@ -32,7 +32,7 @@ def my_constraint2(q, qd, qdd, ee_pos, u):
 my_constraints = [my_constraint1, my_constraint2]
 
 
-def my_final_constraint1(q, q_dot, u, ee_pos, q_ddot):
+def my_final_constraint1(q, qd, qdd, ee_pos, u):
     return [3.14 / 2, 0], q, [3.14 / 2, 0]
 
 
@@ -63,4 +63,4 @@ print('q = ', res['q'][0])
 
 # Print the results
 fig = optimizer.plot_result()
-# plt.show()
+plt.show()

@@ -2,6 +2,12 @@ from matplotlib import pyplot as plt
 from math import isinf
 import numpy as np
 from matplotlib.gridspec import GridSpec
+import jinja2
+import base64
+from io import BytesIO
+import pathlib
+import sys
+import webbrowser
 
 def show(q, qd, qdd, q_limits, u, T, ee_pos, steps, cost_func, final_term, constr, f_constr):
     # Defining the X axis for most cases
@@ -10,6 +16,7 @@ def show(q, qd, qdd, q_limits, u, T, ee_pos, steps, cost_func, final_term, const
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
     fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
+    generate_html(fig1, fig2, fig3)
     return [fig1, fig2, *fig3]
 
 def plot_q(q, qd, qdd, q_limits, u, tgrid):
@@ -105,8 +112,8 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
     axes.plot(tgrid[:-1], cost_plot, '-', color='tab:blue')
     axes.fill_between(tgrid[:-1], cost_plot, color='tab:blue')
     if final_term is not None:
+        legend = legend + ['final term']
         axes.arrow(tgrid[-2], 0, 0, final_cost, head_length=0.1, color='tab:pink', width=0.0005)
-        legend.append['final term']
     axes.legend(legend)
     # Displaying the numerical value
     string = f'Cost Func: {cumulated_cost[-1]:.2e} \nFinal Term: {final_cost:.2e}'
@@ -159,3 +166,31 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
         fig.tight_layout()
         figures.append(fig)
     return figures
+
+def generate_html(figure1_, figure2_, figure3_):
+    template_path = pathlib.Path(__file__).parent.absolute()
+    # Template handling
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=template_path))
+    template = env.get_template('template.html')
+    img1 = encode_figure(figure1_)
+    img2 = encode_figure(figure2_)
+    img3 = encode_figure(figure3_)
+    html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3)
+    
+    # Write the HTML file
+    name, _ = sys.argv[0].split('.')
+    with open(name + '_report.html', 'w') as f:
+        f.write(html)
+    webbrowser.open_new(name + '_report.html')
+
+def encode_figure(figure_list):
+    if not isinstance(figure_list, list): figure_list = [figure_list]
+    figure_html = ''
+    for fig in figure_list:
+        tmpfile = BytesIO()
+        fig.savefig(tmpfile, format='png')
+        encoded = base64.b64encode(tmpfile.getvalue()).decode('utf8')
+        figure_html = figure_html + '<img src=\'data:image/png;base64,{}\'>'.format(encoded)
+        if not fig == figure_list[-1]: # if not last element
+            figure_html = figure_html + '<br>' # line break
+    return figure_html
