@@ -379,7 +379,7 @@ class Problem:
             traj = cs.vertcat(*traj(t))
         return traj, traj_dot
 
-    def plot_results(self):
+    def plot_results(self, display_html):
         '''Displaying the results with matplotlib'''
         joint_limits = {
             'q': (self.lower_q, self.upper_q),
@@ -392,4 +392,5 @@ class Problem:
                     cost_func = self.cost_func,
                     final_term = self.final_term_cost,
                     constr = self.constraints,
-                    f_constr = self.final_constraints)
+                    f_constr = self.final_constraints,
+                    show = display_html)

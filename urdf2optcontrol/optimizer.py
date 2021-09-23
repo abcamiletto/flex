@@ -17,9 +17,9 @@ class Optimizer:
         result = self.problem.solve_nlp()
         return result
 
-    def plot_result(self):
+    def plot_result(self, show=False):
         '''Display the results with matplotlib'''
-        return self.problem.plot_results()
+        return self.problem.plot_results(show)
 
 
 optimizer = Optimizer()
