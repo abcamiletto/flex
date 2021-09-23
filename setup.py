@@ -12,7 +12,7 @@ setup(
     url="https://github.com/abcamiletto/urdf2optcontrol",
     description=DESCRIPTION,
     packages=find_packages(),
-    install_requires=['casadi', 'numpy>=1.21', 'matplotlib'],
+    install_requires=['casadi', 'numpy>=1.21', 'matplotlib', 'jinja2'],
     keywords=['python', 'optimal_control', 'robotics', 'robots'],
     classifiers=[
         "Topic :: Scientific/Engineering :: Mathematics"
