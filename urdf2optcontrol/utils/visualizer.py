@@ -9,6 +9,8 @@ import pathlib
 import sys
 import webbrowser
 
+img_width = 13
+
 def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
@@ -28,7 +30,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
                     'wspace': 0.4,
                     'hspace': 0.4}
 
-    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(8,2.2*n_joints), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(img_width,2.2*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
 
     if n_joints==1: axes = [axes] # make it a list for enumerate
@@ -44,7 +46,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[0].legend('q'+str(idx))
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
-        ax[0].set_title('q plot')
+        if idx == 0: ax[0].set_title('q plot')
         ax[0].grid()
 
         # Painting the boundaries
@@ -56,13 +58,13 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[1].plot(tgrid, qd[idx], 'g-')
         ax[1].legend('qd'+str(idx))
         ax[1].set_xlabel('time')
-        ax[1].set_title('qd plot')
+        if idx == 0: ax[1].set_title('qd plot')
         ax[1].grid()
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
         ax[2].legend('qdd'+str(idx))
         ax[2].set_xlabel('time')
-        ax[2].set_title('qdd plot')
+        if idx == 0: ax[2].set_title('qdd plot')
         ax[2].grid()
 
         lb, ub = q_limits['u'][0][idx], q_limits['u'][1][idx]
@@ -73,10 +75,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].plot(tgrid[:-1], u[idx], 'g-')
         ax[3].legend('ud_'+str(idx))
         ax[3].set_xlabel('time')
-        ax[3].set_title('u plot')
+        if idx == 0: ax[3].set_title('u plot')
         ax[3].grid()
-
-    fig.subplots_adjust(top=0.88)
     return fig
 
 def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
@@ -86,7 +86,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
                     'hspace': 0.4}
     
     # Instantiating plot
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8,4), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(img_width,4), gridspec_kw=gridspec_kw)
     fig.suptitle('Cost Function', fontsize=14)
 
     # Refactor function for q and its derivatives to be [q0(0), q1(0), q2(0)],[q0(1), q1(1), q2(1)] etc
@@ -158,7 +158,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
 
         # Creating the plot
         length = len(value[0]) # colud be n_joints (if cnstraint is array) or T (in constr is scalar)
-        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(8,3))
+        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(img_width,3))
 
         if length == 1: axes = [axes]
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
