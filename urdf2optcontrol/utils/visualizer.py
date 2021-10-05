@@ -14,6 +14,7 @@ img_width = 13
 def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
+    tgrid = np.squeeze(np.array(tgrid))
     # Plotting Q and its derivatives
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
     fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
@@ -120,7 +121,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
     axes.fill_between(tgrid[:-1], cost_plot, color='tab:blue')
     if final_term is not None:
         legend = legend + ['final term']
-        axes.arrow(tgrid[-2], 0, 0, final_cost, head_length=0.1, color='tab:pink', width=0.0005)
+        axes.arrow(tgrid[-2], 0, 0, final_cost, color='tab:pink')
     axes.legend(legend)
     # Displaying the numerical value
     string = f'Cost Func: {cumulated_cost[-1]:.2e} \nFinal Term: {final_cost:.2e}'
