@@ -23,25 +23,31 @@
 
 <h1>URDF2RobOptim Report</h1>
 
+<p>This is an automatic generated HTML file by the URDF2optcontrol tool.</p>
+
 <h2>Settings of the problem</h2>
+
+<p>In the following doc you will be able to analyze the cost function, the joint trajectories and the custom constraints you gave to the problem.</p>
 
 <h2>Cost function</h2>
 
-{{ my_figure2 }}
+<p>In pink you can see the final term cost, if given. This graph should help you balance the cost function and the final term.</p>
 
-<p>Cost function analysis</p>
+{{ my_figure2 }}
 
 <h2>Joints Behaviour</h2>
 
+<p>Here below you can see the joint dynamics and the input trajectories.
+Red boundaries (if any) are the ones the limits written in the URDF, if you gave some additional custom constraints, it won't appear here.</p>
+
 {{ my_figure1 }}
 
-<p>Joints dynamics</p>
 
 <h2>Constraints</h2>
 
-{{ my_figure3 }}
+<p>Here you have the constraints you gave, on the same order, and you can see if they had been respected.</p>
 
-<p>Custom constraints</p>
+{{ my_figure3 }}
 
 </body>
 </html>
