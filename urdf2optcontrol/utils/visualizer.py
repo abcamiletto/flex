@@ -21,7 +21,7 @@ def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, const
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
     final_results = eval_final_constr(q, qd, qdd, ee_pos, u, f_constr)
     if show:
-        generate_html(fig1, fig2, fig3)
+        generate_html(fig1, fig2, fig3, final_results)
     return [fig1, fig2, *fig3], f_constr
 
 def plot_q(q, qd, qdd, q_limits, u, tgrid):
@@ -193,12 +193,13 @@ def eval_final_constr(q, qd, qdd, ee_pos, u, fconstr):
     uf = get_last(u)
     # Computing the final constraints values
     results = []
-    for fcon in fconstr:
-        results.append(fcon(qf,qdf,qddf,ee_posf,uf))
+    if fconstr:
+        for fcon in fconstr:
+            results.append(fcon(qf,qdf,qddf,ee_posf,uf))
     # Results are formatted as a list of [lower bound, actual value, upper bound]
     return results
 
-def generate_html(figure1_, figure2_, figure3_):
+def generate_html(figure1_, figure2_, figure3_, final_constraints):
     template_path = pathlib.Path(__file__).parent.absolute()
     # Template handling
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=template_path))
@@ -206,7 +207,7 @@ def generate_html(figure1_, figure2_, figure3_):
     img1 = encode_figure(figure1_)
     img2 = encode_figure(figure2_)
     img3 = encode_figure(figure3_)
-    html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3)
+    html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3, final_res = final_constraints)
     
     # Write the HTML file
     name, _ = sys.argv[0].split('.', 1)

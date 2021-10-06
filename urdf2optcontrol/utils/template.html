@@ -49,6 +49,27 @@ Red boundaries (if any) are the ones the limits written in the URDF, if you gave
 
 {{ my_figure3 }}
 
+<h2>Final Constraints</h2>
+
+<p>In the table below you will see the final constraints imposed, if any.</p>
+
+<table>
+<TR>
+    <TH>Constraints N.</TH>
+    <TH>Lower Bounds</TH>
+    <TH>Final Value</TH>
+    <TH>Upper Bounds</TH>
+</TR>
+{% for item in final_res %}
+<TR>
+    <TD style="text-align: center;">{{loop.index}}</TD>
+    <TD style="text-align: center;">{{item[0]}}</TD>
+    <TD style="text-align: center;">{{item[1].tolist()}}</TD>
+    <TD style="text-align: center;">{{item[2]}}</TD>
+</TR>
+{% endfor %}
+</table>
+
 </body>
 </html>
 
