@@ -9,16 +9,19 @@ import pathlib
 import sys
 import webbrowser
 
+img_width = 13
+
 def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
+    tgrid = np.squeeze(np.array(tgrid))
     # Plotting Q and its derivatives
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
     fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
     final_results = eval_final_constr(q, qd, qdd, ee_pos, u, f_constr)
     if show:
-        generate_html(fig1, fig2, fig3)
+        generate_html(fig1, fig2, fig3, final_results)
     return [fig1, fig2, *fig3], f_constr
 
 def plot_q(q, qd, qdd, q_limits, u, tgrid):
@@ -28,7 +31,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
                     'wspace': 0.4,
                     'hspace': 0.4}
 
-    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(8,2.2*n_joints), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(img_width,2.2*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
 
     if n_joints==1: axes = [axes] # make it a list for enumerate
@@ -44,7 +47,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[0].legend('q'+str(idx))
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
-        ax[0].set_title('q plot')
+        if idx == 0: ax[0].set_title('q plot')
         ax[0].grid()
 
         # Painting the boundaries
@@ -56,13 +59,13 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[1].plot(tgrid, qd[idx], 'g-')
         ax[1].legend('qd'+str(idx))
         ax[1].set_xlabel('time')
-        ax[1].set_title('qd plot')
+        if idx == 0: ax[1].set_title('qd plot')
         ax[1].grid()
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
         ax[2].legend('qdd'+str(idx))
         ax[2].set_xlabel('time')
-        ax[2].set_title('qdd plot')
+        if idx == 0: ax[2].set_title('qdd plot')
         ax[2].grid()
 
         lb, ub = q_limits['u'][0][idx], q_limits['u'][1][idx]
@@ -73,10 +76,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].plot(tgrid[:-1], u[idx], 'g-')
         ax[3].legend('ud_'+str(idx))
         ax[3].set_xlabel('time')
-        ax[3].set_title('u plot')
+        if idx == 0: ax[3].set_title('u plot')
         ax[3].grid()
-
-    fig.subplots_adjust(top=0.88)
     return fig
 
 def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
@@ -86,7 +87,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
                     'hspace': 0.4}
     
     # Instantiating plot
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8,4), gridspec_kw=gridspec_kw)
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(img_width,4), gridspec_kw=gridspec_kw)
     fig.suptitle('Cost Function', fontsize=14)
 
     # Refactor function for q and its derivatives to be [q0(0), q1(0), q2(0)],[q0(1), q1(1), q2(1)] etc
@@ -120,7 +121,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
     axes.fill_between(tgrid[:-1], cost_plot, color='tab:blue')
     if final_term is not None:
         legend = legend + ['final term']
-        axes.arrow(tgrid[-2], 0, 0, final_cost, head_length=0.1, color='tab:pink', width=0.0005)
+        axes.arrow(tgrid[-2], 0, 0, final_cost, color='tab:pink')
     axes.legend(legend)
     # Displaying the numerical value
     string = f'Cost Func: {cumulated_cost[-1]:.2e} \nFinal Term: {final_cost:.2e}'
@@ -158,7 +159,7 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
 
         # Creating the plot
         length = len(value[0]) # colud be n_joints (if cnstraint is array) or T (in constr is scalar)
-        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(8,3))
+        fig, axes = plt.subplots(nrows=1, ncols=length, figsize=(img_width,3))
 
         if length == 1: axes = [axes]
         iterator = zip(ref_constr(low_bound), ref_constr(value), ref_constr(high_bound), axes)
@@ -192,12 +193,13 @@ def eval_final_constr(q, qd, qdd, ee_pos, u, fconstr):
     uf = get_last(u)
     # Computing the final constraints values
     results = []
-    for fcon in fconstr:
-        results.append(fcon(qf,qdf,qddf,ee_posf,uf))
+    if fconstr:
+        for fcon in fconstr:
+            results.append(fcon(qf,qdf,qddf,ee_posf,uf))
     # Results are formatted as a list of [lower bound, actual value, upper bound]
     return results
 
-def generate_html(figure1_, figure2_, figure3_):
+def generate_html(figure1_, figure2_, figure3_, final_constraints):
     template_path = pathlib.Path(__file__).parent.absolute()
     # Template handling
     env = jinja2.Environment(loader=jinja2.FileSystemLoader(searchpath=template_path))
@@ -205,7 +207,7 @@ def generate_html(figure1_, figure2_, figure3_):
     img1 = encode_figure(figure1_)
     img2 = encode_figure(figure2_)
     img3 = encode_figure(figure3_)
-    html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3)
+    html = template.render(my_figure1=img1, my_figure2=img2, my_figure3=img3, final_res = final_constraints)
     
     # Write the HTML file
     name, _ = sys.argv[0].split('.', 1)
