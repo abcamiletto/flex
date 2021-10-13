@@ -65,15 +65,15 @@ class Problem:
             # Adjusting the lenght of the variables
             self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
             self.num_state_var = self.num_joints * 2
-            self.lower_q = self.lower_q * 2
-            self.lower_qd = self.lower_qd * 2
-            self.upper_q = self.upper_q * 2
-            self.upper_qd = self.upper_qd * 2
+            self.lower_q = self.lower_q + self.lower_theta
+            self.lower_qd = self.lower_qd + self.lower_thetad
+            self.upper_q = self.upper_q + self.upper_theta
+            self.upper_qd = self.upper_qd + self.upper_thetad
 
         # Adjusting RHS for SEA modeling, with motor inertia unknown
         elif self.sea and not self.SEAinertia: 
             rhs2 += -self.M_inv @ self.K @ (self.q - self.u)
-            self.upper_u, self.lower_u = self.upper_q, self.lower_q
+            # self.upper_u, self.lower_u = self.upper_q, self.lower_q
             RHS = [rhs1, rhs2]
 
             # State  variable

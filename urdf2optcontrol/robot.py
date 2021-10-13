@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 class Robot:
     '''Class that handles the loading process from the URDF'''
-    def __init__(self, urdf_path, root, tip, motor_inertias=None, sea_damping=None):
+    def __init__(self, urdf_path, root, tip, get_motor_inertias=True):
         '''Takes the minimum info required to start the dynamics matrix calculations.
         Motor inertias and SEA dampings can be given manually, or will be automatically parsed'''
 
@@ -29,13 +29,9 @@ class Robot:
         self.upper_qd, self.lower_qd = self._fix_boundaries(self.max_velocity)
 
         # SEA Stuff
-        self.sea = self.get_joints_stiffness(urdf_path).any()  # True if at least one joint is sea
+        self.sea = self.get_joints_plugin(urdf_path, 'spring_k', 0, diag=True).any()  # True if at least one joint is sea
         if self.sea:
-            self.K = self.get_joints_stiffness(urdf_path)
-            self.SEAvars()
-            self.B = self.get_B(motor_inertias)
-            self.FDsea = self.get_FDsea(sea_damping)
-            self.SEAinertia = self.B.any()  # True when we're modeling also motor inertia
+            self.get_seaplugin_values(urdf_path, get_motor_inertias)
 
     @staticmethod
     def _load_urdf(urdf_path: str):
@@ -75,6 +71,32 @@ class Robot:
         _, self.actuated_list, upper_q, lower_q = self.robot_parser.get_joint_info(self.root, self.tip)
         max_effort, max_velocity = self.robot_parser.get_other_limits(self.root, self.tip)
         return upper_q, lower_q, max_effort, max_velocity
+    
+    def get_limits_plugin(self, urdf_path) -> list:
+        '''Function that returns all the limits stored in the plugin of URDF'''
+        upper_theta = self.get_joints_plugin(urdf_path, 'mot_maxPos', float('inf'))
+        lower_theta = self.get_joints_plugin(urdf_path, 'mot_minPos', -float('inf'))
+        max_effort_theta = self.get_joints_plugin(urdf_path, 'mot_tauMax', float('inf'))
+        max_velocity_theta = self.get_joints_plugin(urdf_path, 'mot_maxVel', float('inf'))
+        return upper_theta, lower_theta, max_effort_theta, max_velocity_theta
+
+    def get_seaplugin_values(self, urdf_path, get_motor_inertias):
+        self.K = self.get_joints_plugin(urdf_path, 'spring_k', 0, diag=True)
+        self.B = self.get_joints_plugin(urdf_path, 'mot_J', 0, diag=True)
+        self.FDsea = self.get_joints_plugin(urdf_path, 'mot_D', 0, diag=True)
+        self.SEAvars()
+        if get_motor_inertias == True:  # if user wants to consider motor inertias
+            self.SEAinertia = self.B.any()  # True when we're modeling also motor inertia
+        else:
+            self.SEAinertia = False
+        self.upper_theta, self.lower_theta, self.max_effort_theta, self.max_velocity_theta = self.get_limits_plugin(
+            urdf_path)
+        if self.SEAinertia:
+            self.upper_u, self.lower_u = self._fix_boundaries(self.max_effort_theta)
+            self.upper_thetad, self.lower_thetad = self._fix_boundaries(self.max_velocity_theta)
+        else:
+            # if not considering motor inertia, theta is system control
+            self.upper_u, self.lower_u = self.upper_theta, self.lower_theta
 
     def _get_forward_kinematics(self):
         '''Return a CASaDi function that takes the joints position as input and returns the end effector position'''
@@ -119,34 +141,20 @@ class Robot:
         self.theta_dot = cs.SX.sym("theta_dot", self.num_joints)
         self.tau_sea = self.K @ (self.q - self.theta)
 
-    def get_joints_stiffness(self, urdf_path):
+    def get_joints_plugin(self, urdf_path, key_word, value_if_not_found, diag=False):
         '''Manually retriving Gazebo Plugin info from the URDF'''
         tree = ET.parse(urdf_path)
         results = {}
         for gazebo in tree.findall('gazebo/plugin'):
             try:
-                results[gazebo.find('joint').text] = float(gazebo.find('stiffness').text)
+                results[gazebo.find('joint').text] = float(gazebo.find(key_word).text)
             except:
                 pass
 
-        in_list = [results.get(joint, 0) for joint in self.actuated_list]
-        return np.diag(in_list)
-
-    def get_B(self, motor_inertias):
-        '''Retrieving the B matrix (motor inertia)'''
-        if motor_inertias is None:
-            motor_inertias = {}
-
-        in_list = [motor_inertias.get(joint, 0) for joint in self.actuated_list]
-        return np.diag(in_list)
-
-    def get_FDsea(self, sea_damping):
-        '''Retrieving the damping matrix for SEA joints'''
-        if sea_damping is None: 
-            sea_damping = {}
-
-        in_list = [sea_damping.get(joint, 0) for joint in self.actuated_list]
-        return np.diag(in_list)
+        in_list = [results.get(joint, value_if_not_found) for joint in self.actuated_list]
+        if diag == True:
+            in_list = np.diag(in_list)
+        return in_list
 
     def __str__(self):
         '''Summary of the info loaded into the robot, for an easier debugging'''
