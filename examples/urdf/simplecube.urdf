@@ -91,6 +91,7 @@
          </plugin>
     </gazebo>
 
+    <!-- Plugin insertion -->
     <gazebo>
         <plugin name="sea_j1" filename="libsea_plugin.so">
             # REQUIRED tags
@@ -102,16 +103,16 @@
             
             # Available OPTIONAL tags with default values are
             <!-- spring parameters -->
-            <spring_k>2.0</spring_k>
-            <max_def>0.8</max_def>
+            <spring_k>10.0</spring_k>
+            <max_def>3.15</max_def>
             <!-- motors parameters -->
             <mot_J>0.0233</mot_J>                   # motor inertia
-            <mot_D>0.0019</mot_D>                   # motor damping
+            <mot_D>0.19</mot_D>                     # motor damping
             <mot_tauMax>6.0</mot_tauMax>            # maximum motor torque
             <mot_maxVel>6.0</mot_maxVel>            # maximum motor velocity
-            <mot_minPos>-inf</mot_minPos>           # minimum motor position
-            <mot_maxPos>inf</mot_maxPos>            # maximum motor position
-            <mot_tauFric>0.5</mot_tauFric>          # static motor friction 
+            <mot_minPos>-100</mot_minPos>           # minimum motor position
+            <mot_maxPos>100</mot_maxPos>            # maximum motor position
+            <mot_tauFric>0.0</mot_tauFric>          # static motor friction 
             <!-- controllers parameters -->
             <ctrl_P>125</ctrl_P>                    # proportional gain on motor
             <ctrl_I>0</ctrl_I>                      # integral gain on motor
