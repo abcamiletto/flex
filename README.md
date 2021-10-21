@@ -130,7 +130,6 @@ Fourth Round
 
 - [x] SAE with not every joint elastic
 - [x] Check damping+friction implementation in urdf2casadi
-- [ ] ROS utilization guide 
 - [x] Add a parameter to choose whether you want to implement motor dynamics or not
 - [x] Fix examples
 - [x] Modelling without motor inertias
@@ -140,8 +139,15 @@ Fourth Round
 - [x] Desired trajectory as optional argument
 - [x] Insert ee position and q acceleration in cost functions
 
+Fifth Round
+
+- [x] Development of a visualization function for results generating HTML report
+- [ ] Customization of report layout
+- [ ] Link GitHub page for ROS implementation example
 
 To do or not to do?
+
 - [x] Implementation of a minimum time cost function 
 - [x] Implementation of fixed final constraints
 - [ ] Direct collocation
+- [ ] Implement different types of elastic actuators
