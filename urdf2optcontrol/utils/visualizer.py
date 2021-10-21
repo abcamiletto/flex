@@ -30,7 +30,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
     gridspec_kw={   'width_ratios': [2, 1, 1, 1],
                     'wspace': 0.4,
                     'hspace': 0.4,
-                    'top': 0.8}
+                    'top': 0.75}
 
     fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(img_width,2.2*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
@@ -45,11 +45,12 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
 
         # Plotting the values
         ax[0].plot(tgrid, q[idx], '-')
-        ax[0].legend('q'+str(idx))
         ax[0].set_xlabel('time')
         ax[0].set_ylabel('q'+str(idx))
         if idx == 0: ax[0].set_title('q plot')
         ax[0].grid()
+        ax[0].set_xlim([min(tgrid) - (max(tgrid)-min(tgrid))/10, max(tgrid) + (max(tgrid)-min(tgrid))/10])
+        ax[0].set_ylim([min(q[idx]) - (max(q[idx])-min(q[idx]))/10, max(q[idx]) + (max(q[idx])-min(q[idx]))/10])
 
         # Painting the boundaries
         lb, ub = q_limits['qd'][0][idx], q_limits['qd'][1][idx]
@@ -58,16 +59,25 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
             ax[1].axhspan(lb, ub, facecolor='w')
 
         ax[1].plot(tgrid, qd[idx], 'g-')
-        ax[1].legend('qd'+str(idx))
         ax[1].set_xlabel('time')
         if idx == 0: ax[1].set_title('qd plot')
         ax[1].grid()
+        ax[1].set_xlim([min(tgrid) - (max(tgrid) - min(tgrid)) / 10, max(tgrid) + (max(tgrid) - min(tgrid)) / 10])
+        ax[1].set_ylim([min(qd[idx]) - (max(qd[idx])-min(qd[idx]))/10, max(qd[idx]) + (max(qd[idx])-min(qd[idx]))/10])
+
+        # Painting the boundaries
+        # lb, ub = q_limits['qdd'][0][idx], q_limits['qdd'][1][idx]
+        # if not isinf(lb) and not isinf(ub):
+        #     ax[2].set_facecolor((1.0, 0.45, 0.4))
+        #     ax[2].axhspan(lb, ub, facecolor='w')
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
         ax[2].legend('qdd'+str(idx))
         ax[2].set_xlabel('time')
         if idx == 0: ax[2].set_title('qdd plot')
         ax[2].grid()
+        ax[2].set_xlim([min(tgrid) - (max(tgrid) - min(tgrid)) / 10, max(tgrid) + (max(tgrid) - min(tgrid)) / 10])
+        ax[2].set_ylim([min(qdd[idx]) - (max(qdd[idx]) - min(qdd[idx])) / 10, max(qdd[idx]) + (max(qdd[idx]) - min(qdd[idx])) / 10])
 
         lb, ub = q_limits['u'][0][idx], q_limits['u'][1][idx]
         if not isinf(lb) and not isinf(ub):
@@ -79,6 +89,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].set_xlabel('time')
         if idx == 0: ax[3].set_title('u plot')
         ax[3].grid()
+        ax[3].set_xlim([min(tgrid) - (max(tgrid) - min(tgrid)) / 10, max(tgrid) + (max(tgrid) - min(tgrid)) / 10])
+        ax[3].set_ylim([min(u[idx]) - (max(u[idx]) - min(u[idx])) / 10, max(u[idx]) + (max(u[idx]) - min(u[idx])) / 10])
 
     return fig
 
