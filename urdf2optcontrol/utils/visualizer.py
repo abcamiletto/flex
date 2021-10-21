@@ -29,7 +29,8 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
     # Setting for the plot axis
     gridspec_kw={   'width_ratios': [2, 1, 1, 1],
                     'wspace': 0.4,
-                    'hspace': 0.4}
+                    'hspace': 0.4,
+                    'top': 0.8}
 
     fig, axes = plt.subplots(nrows=n_joints, ncols=4, figsize=(img_width,2.2*n_joints), gridspec_kw=gridspec_kw)
     fig.suptitle('Joints and Inputs', fontsize=14)
@@ -78,6 +79,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         ax[3].set_xlabel('time')
         if idx == 0: ax[3].set_title('u plot')
         ax[3].grid()
+
     return fig
 
 def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
