@@ -8,16 +8,17 @@ from io import BytesIO
 import pathlib
 import sys
 import webbrowser
+from casadi import substitute, SX
 
 img_width = 13
 
-def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, constr, f_constr, show=False):
+def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, target_traj, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
     tgrid = np.squeeze(np.array(tgrid))
     # Plotting Q and its derivatives
     fig1 = plot_q(q, qd, qdd, q_limits, u, tgrid)
-    fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid)
+    fig2 = plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, target_traj, tgrid)
     fig3 = plot_constraints(q, qd, qdd, ee_pos, u, constr, tgrid)
     final_results = eval_final_constr(q, qd, qdd, ee_pos, u, f_constr)
     if show:
@@ -94,7 +95,7 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
 
     return fig
 
-def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
+def plot_cost(q, qd, qdd, ee_pos, u, cost_func, final_term, target_traj, tgrid):
     n_joints = len(q)
     # Setting for the axis
     gridspec_kw={   'wspace': 0.4,
@@ -109,7 +110,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func,final_term, tgrid):
 
     # Calculating the value of the cost function for each point
     iterator = zip(ref(q), ref(qd), ref(qdd), ref(ee_pos), ref(u), tgrid)
-    cost_plot = np.array([cost_func(q,qd,qdd,ee_pos,u,t) for q,qd,qdd,ee_pos,u,t in iterator])
+    cost_plot = np.array([cost_func(q-float(substitute(target_traj, SX.sym("t", 1), t)),qd,qdd,ee_pos,u,t) for q,qd,qdd,ee_pos,u,t in iterator])
     cost_plot = np.squeeze(cost_plot)
 
     # Final Value

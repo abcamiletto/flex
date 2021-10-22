@@ -391,6 +391,7 @@ class Problem:
                     steps = self.N,
                     cost_func = self.cost_func,
                     final_term = self.final_term_cost,
+                    target_traj = self.traj,
                     constr = self.constraints,
                     f_constr = self.final_constraints,
                     show = display_html)
