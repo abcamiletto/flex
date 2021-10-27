@@ -84,7 +84,8 @@ class Robot:
         self.K = self.get_joints_plugin(urdf_path, 'spring_k', 0, diag=True)
         self.B = self.get_joints_plugin(urdf_path, 'mot_J', 0, diag=True)
         self.FDsea = self.get_joints_plugin(urdf_path, 'mot_D', 0, diag=True)
-        print('K, B, FDsea = ', self.K, self.B, self.FDsea)
+        self.FMusea = self.get_joints_plugin(urdf_path, 'mot_tauFric', 0, diag=True)
+        print('K, B, FDsea, FMusea = ', self.K, self.B, self.FDsea, self.FMusea)
         self.SEAvars()
         if get_motor_inertias == True:  # if user wants to consider motor inertias
             self.SEAinertia = self.B.any()  # True when we're modeling also motor inertia

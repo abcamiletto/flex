@@ -12,7 +12,7 @@ from casadi import substitute, SX
 
 img_width = 13
 
-def show(q, qd, qdd, u, T, ee_pos, q_limits, steps, cost_func, final_term, target_traj, constr, f_constr, show=False):
+def show(q, qd, qdd, u, T, ee_pos, theta, thetad, q_limits, steps, cost_func, final_term, target_traj, constr, f_constr, show=False):
     # Defining the X axis for most cases
     tgrid = [T / steps * k for k in range(steps + 1)]
     tgrid = np.squeeze(np.array(tgrid))
@@ -73,7 +73,6 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
         #     ax[2].axhspan(lb, ub, facecolor='w')
 
         ax[2].plot(tgrid[:-1], qdd[idx], 'y-')
-        ax[2].legend('qdd'+str(idx))
         ax[2].set_xlabel('time')
         if idx == 0: ax[2].set_title('qdd plot')
         ax[2].grid()
@@ -86,7 +85,6 @@ def plot_q(q, qd, qdd, q_limits, u, tgrid):
             ax[3].axhspan(lb, ub, facecolor='w')
 
         ax[3].plot(tgrid[:-1], u[idx], 'g-')
-        ax[3].legend('ud_'+str(idx))
         ax[3].set_xlabel('time')
         if idx == 0: ax[3].set_title('u plot')
         ax[3].grid()
@@ -160,8 +158,8 @@ def plot_constraints(q, qd, qdd, ee_pos, u, constraints, tgrid):
     for idx, constraint in enumerate(constraints):
         
         # Calculating the value of the contraints all along the x axis
-        iterator = zip(ref_joint(q), ref_joint(qd), ref_joint(qdd), ref_joint(ee_pos), ref_joint(u))
-        constr_plot = [constraint(q,qd,qdd,ee_pos,u) for q,qd,qdd,ee_pos,u in iterator]
+        iterator = zip(ref_joint(q), ref_joint(qd), ref_joint(qdd), ref_joint(ee_pos), ref_joint(u), tgrid)
+        constr_plot = [constraint(q,qd,qdd,ee_pos,u,t) for q,qd,qdd,ee_pos,u,t in iterator]
 
         # Unpacking value and bounds
         low_bound = np.array([instant[0] for instant in constr_plot])

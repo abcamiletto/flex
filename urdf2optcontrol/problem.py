@@ -53,14 +53,16 @@ class Problem:
         # RHS that's in common for all cases
         rhs1 = self.q_dot
         rhs2 = self.M_inv @ (-self.Cq - self.G - self.Fd @ self.q_dot - self.Ff @ cs.sign(self.q_dot))
-
         # Adjusting RHS for SEA with known inertia. Check the paper for more info.
         if self.sea and self.SEAinertia: 
     
-            rhs2 += -self.M_inv @ self.tau_sea
+            rhs2 -= self.M_inv @ self.tau_sea
             rhs3 = self.theta_dot
-            rhs4 = cs.pinv(self.B) @ (-self.FDsea @ self.q_dot + self.u + self.tau_sea)
+            rhs4 = cs.pinv(self.B) @ (-self.FDsea @ self.theta_dot + self.u + self.tau_sea - self.FMusea @ cs.sign(self.theta_dot))
+            print('K, B, FDsea, FMusea, inv_b = ', self.K, self.B, self.FDsea, self.FMusea, cs.pinv(self.B))
             RHS = [rhs1, rhs2, rhs3, rhs4]
+            for idx, rh in enumerate(RHS):
+                print('rhs' + str(idx) + ' = ', rh)
 
             # Adjusting the lenght of the variables
             self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
@@ -206,7 +208,7 @@ class Problem:
 
             # Add custom constraints
             if constraints is not None:
-                self.add_custom_constraints(g, lbg, ubg, Xk, Uk, constraints)
+                self.add_custom_constraints(g, lbg, ubg, Xk, Uk, dt * k, constraints)
 
             # Defining a new state variable
             Xk = cs.MX.sym('X'+str(k+1), self.num_state_var * 2)
@@ -220,7 +222,7 @@ class Problem:
 
         # Setting constraints on the last timestep
         if constraints is not None:
-            self.add_custom_constraints(g, lbg, ubg, Xk, None, constraints)
+            self.add_custom_constraints(g, lbg, ubg, Xk, None, self.T, constraints)
 
         # If we are optimizing for minimum T, we set its boundaries
         if isinstance(self.T, cs.casadi.MX):
@@ -246,7 +248,7 @@ class Problem:
 
         # Adding constraint on final timestep
         if self.final_constraints is not None:
-            self.add_custom_constraints(g, lbg, ubg, Xk, None, self.final_constraints)
+            self.add_custom_constraints(g, lbg, ubg, Xk, None, self.T, self.final_constraints, final=True)
 
         # Define the problem to be solved
         problem = {'f': J, 'x': cs.vertcat(*w), 'g': cs.vertcat(*g)}
@@ -258,7 +260,7 @@ class Problem:
         self.solver = solver(x0=w_g, lbx=lbw, ubx=ubw, lbg=lbg, ubg=ubg)
         
 
-    def add_custom_constraints(self, g, lbg, ubg, Xk, Uk, constraints):
+    def add_custom_constraints(self, g, lbg, ubg, Xk, Uk, T_, constraints, final=False):
         '''Helper function to simplify the settings of the constraints'''
         if Uk is None:
             Uk = np.array([0]*self.num_joints)
@@ -272,8 +274,12 @@ class Problem:
             Q_ddot_ = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints], Uk)
 
         for constraint in constraints:
-            l_bound, f_bound, u_bound = constraint(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
-                                                   Q_ddot_, EEk_pos_, Uk)
+            if final:
+                l_bound, f_bound, u_bound = constraint(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
+                                                       Q_ddot_, EEk_pos_, Uk)
+            else:
+                l_bound, f_bound, u_bound = constraint(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
+                                                   Q_ddot_, EEk_pos_, Uk, T_)
 
             if not isinstance(f_bound, list): f_bound = [f_bound]
             if not isinstance(l_bound, list): l_bound = [l_bound]
@@ -337,7 +343,12 @@ class Problem:
                         'qdd': self.qdd_opt,
                         'u': self.casadi2nparray(self.u_opt),
                         'T': self.T_opt,
-                        'ee_pos': self.ee_opt}
+                        'ee_pos': self.ee_opt,
+                        'theta': None,
+                        'thetad': None}
+        if self.sea and self.SEAinertia:
+            self.result['theta'] = self.theta_opt
+            self.result['thetad'] = self.thetad_opt
         return self.result
 
     def casadi2nparray(self, casadi_array):
