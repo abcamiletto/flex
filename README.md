@@ -6,7 +6,7 @@ Our tool provide an optimal solution for almost every problem related to a robot
 We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
 
 ```bash
-git clone https://github.com/abcamiletto/urdf_optcontrol.git && cd urdf_optcontrol
+git clone https://github.com/abcamiletto/urdf2optcontrol.git && cd urdf2optcontrol
 ./install.sh
 ```
 
@@ -22,7 +22,7 @@ pip install casadi
 2. urdf2casadi
     
 ```bash
-git clone https://github.com/mahaarbo/urdf2casadi.git
+git clone https://github.com/abcamiletto/urdf2casadi-light.git
 cd urdf2casadi
 pip install .
 ```
