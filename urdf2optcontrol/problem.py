@@ -59,10 +59,7 @@ class Problem:
             rhs2 -= self.M_inv @ self.tau_sea
             rhs3 = self.theta_dot
             rhs4 = cs.pinv(self.B) @ (-self.FDsea @ self.theta_dot + self.u + self.tau_sea - self.FMusea @ cs.sign(self.theta_dot))
-            print('K, B, FDsea, FMusea, inv_b = ', self.K, self.B, self.FDsea, self.FMusea, cs.pinv(self.B))
             RHS = [rhs1, rhs2, rhs3, rhs4]
-            for idx, rh in enumerate(RHS):
-                print('rhs' + str(idx) + ' = ', rh)
 
             # Adjusting the lenght of the variables
             self.x = cs.vertcat(self.q, self.q_dot, self.theta, self.theta_dot)
