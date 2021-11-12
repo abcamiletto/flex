@@ -46,9 +46,9 @@ optimizer.load_robot(urdf_path, root, end)
 
 # Loading the problem conditions
 optimizer.load_problem(
-    my_cost_func,
-    steps,
-    in_cond,
+    cost_func=my_cost_func,
+    control_steps=steps,
+    initial_cond=in_cond,
     time_horizon=time_horizon,
     trajectory_target=my_trajectory_target,
     constraints=my_constraints,

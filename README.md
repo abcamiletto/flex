@@ -50,7 +50,7 @@ def trajectory_target_(t):
     return q
 
 # Our cost function
-def my_cost_func(q, qd, u, t):
+def my_cost_func(q, qd, qdd, ee_pos, u, t):
     return 100*q.T@q + u.T@u/10
 
 # Additional Constraints I may want to set
@@ -70,18 +70,18 @@ my_final_constraints = [my_final_constraint1]
 in_cond = [0,0] + [0,0]
 
 # Optimization parameters
-steps = 35
-time_horizon = 1    # if not set, it is free (and optimized)
+steps = 40
+time_horizon = 1.0    # if not set, it is free (and optimized)
 
 # Load the urdf and calculate the differential equations
 optimizer.load_robot(urdf_path, root, end)
 
 # Loading the problem conditions
 optimizer.load_problem(
-    my_cost_func,
-    steps,
-    in_cond,
-    trajectory_target = trajectory_target_,
+    cost_func=my_cost_func,
+    control_steps=steps,
+    initial_cond=in_cond,
+    trajectory_target=trajectory_target = trajectory_target_,
     time_horizon=time_horizon,
     constraints=my_constraints, 
     final_constraints=my_final_constraints,
@@ -89,11 +89,10 @@ optimizer.load_problem(
     )
 
 # Solving the non linear problem
-optimizer.solve()
+res = optimizer.solve()
 
 # Print the results!
-fig = optimizer.plot_result()
-plt.show()
+fig = optimizer.plot_result(show=True)
 ```
 
 
