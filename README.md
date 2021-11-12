@@ -1,4 +1,4 @@
-# From URDF to Optimal Control
+# Flex* - From URDF to Flexible Robots Optimal Control
 Here we offer an easy to use library that allows you to do optimal control of a given robot, via urdf.
 Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of,
 
