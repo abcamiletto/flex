@@ -13,19 +13,17 @@ in_cond = [0] * 4
 
 
 def my_cost_func(q, qd, qdd, ee_pos, u, t):
-    return 0 # u.T @ u / 10**8
-
+    return u.T @ u / 10**4
 
 def my_final_term_cost(qf, qdf, qddf, ee_posf, uf):
     return (-np.sin(qf[0]) * 1 * qdf[0] -np.sin(qf[0]+qf[1]) * 1 * (qdf[0]+qdf[1]))
 
-def my_constraint1(q, qd, qdd, ee_pos, u):
+
+def my_constraint1(q, qd, qdd, ee_pos, u, t):
     return [-30, -30], u, [30, 30]
 
-
-def my_constraint2(q, qd, qdd, ee_pos, u):
+def my_constraint2(q, qd, qdd, ee_pos, u, t):
     return [-4, -4], qd, [4, 4]
-
 
 my_constraints = [my_constraint1, my_constraint2]
 

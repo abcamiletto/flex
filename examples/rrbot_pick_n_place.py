@@ -17,11 +17,11 @@ def my_final_cost_func(q, qd, qdd, ee_pos, u):
     return (ee_pos[0] + 1.0)**2 + (ee_pos[2] - 2.0)**2
 
 
-def my_constraint1(q, qd, qdd, ee_pos, u):
+def my_constraint1(q, qd, qdd, ee_pos, u, t):
     return [-30, -30], u, [30, 30]
 
 
-def my_constraint2(q, qd, qdd, ee_pos, u):
+def my_constraint2(q, qd, qdd, ee_pos, u, t):
     return [-4, -4], qd, [4, 4]
 
 

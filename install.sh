@@ -7,6 +7,6 @@ git clone https://github.com/abcamiletto/urdf2casadi-light.git
 cd urdf2casadi-light
 pip install .
 cd ..
-git clone https://github.com/abcamiletto/urdf_optcontrol.git
-cd urdf_optcontrol
+git clone https://github.com/abcamiletto/urdf2optcontrol.git
+cd urdf2optcontrol
 pip install .

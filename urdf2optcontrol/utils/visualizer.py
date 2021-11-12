@@ -8,7 +8,7 @@ from io import BytesIO
 import pathlib
 import sys
 import webbrowser
-from casadi import substitute, SX
+from casadi import substitute, SX, MX
 
 img_width = 13
 
@@ -108,7 +108,7 @@ def plot_cost(q, qd, qdd, ee_pos, u, cost_func, final_term, target_traj, tgrid):
 
     # Calculating the value of the cost function for each point
     iterator = zip(ref(q), ref(qd), ref(qdd), ref(ee_pos), ref(u), tgrid)
-    cost_plot = np.array([cost_func(q-float(substitute(target_traj, SX.sym("t", 1), t)),qd,qdd,ee_pos,u,t) for q,qd,qdd,ee_pos,u,t in iterator])
+    cost_plot = np.array([cost_func(q-target_traj(t),qd,qdd,ee_pos,u,t) for q,qd,qdd,ee_pos,u,t in iterator])
     cost_plot = np.squeeze(cost_plot)
 
     # Final Value

@@ -21,11 +21,11 @@ def my_cost_func(q, qd, qdd, ee_pos, u, t):
     return q.T @ q + u.T @ u / 10 ** 5
 
 
-def my_constraint1(q, qd, qdd, ee_pos, u):
+def my_constraint1(q, qd, qdd, ee_pos, u, t):
     return [-30, -30], u, [30, 30]
 
 
-def my_constraint2(q, qd, qdd, ee_pos, u):
+def my_constraint2(q, qd, qdd, ee_pos, u, t):
     return [-4, -4], qd, [4, 4]
 
 

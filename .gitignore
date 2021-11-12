@@ -1,5 +1,7 @@
 # Folders
 Jupyters/
+Build/
+urdf2optcontrol.egg-info/
 
 # Editors
 .vscode/

@@ -399,7 +399,7 @@ class Problem:
                     steps = self.N,
                     cost_func = self.cost_func,
                     final_term = self.final_term_cost,
-                    target_traj = self.traj,
+                    target_traj = cs.Function('cost_func', [self.t], [self.traj], ['t'], ['cost_func']),
                     constr = self.constraints,
                     f_constr = self.final_constraints,
                     show = display_html)

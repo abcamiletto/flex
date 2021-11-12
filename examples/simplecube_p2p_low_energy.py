@@ -4,33 +4,40 @@ from matplotlib import pyplot as plt
 import pathlib
 
 # URDF options
-urdf_path = pathlib.Path(__file__).parent.joinpath('urdf', 'rrbot.urdf').absolute()
-root = "link1"
-end = "link3"
+urdf_path = pathlib.Path(__file__).parent.joinpath('urdf', 'simplecube.urdf').absolute()
+root = "cube_base" # "world"
+end = "link"
 
-in_cond = [0] * 4
+# point to point low energy
+    
+in_cond = [0, 0]
+
 
 def my_cost_func(q, qd, qdd, ee_pos, u, t):
-    return 1 + u.T @ u/ 10**5
+    return u.T @ u
+
 
 def my_constraint1(q, qd, qdd, ee_pos, u, t):
-    return [-30, -30], u, [30, 30]
+    return [-30], u, [30]
 
 def my_constraint2(q, qd, qdd, ee_pos, u, t):
-    return [-4, -4], qd, [4, 4]
+    return [-4], qd, [4]
+    
+def my_constraint3(q, qd, qdd, ee_pos, u, t):
+    return [-100], qdd, [100]
+
+my_constraints = [my_constraint1, my_constraint2, my_constraint3]
 
 
-my_constraints = [my_constraint1, my_constraint2]
+def my_final_constr1(q, qd, qdd, ee_pos, u):
+    return [3.14/2], q, [3.14/2]
+    
+def my_final_constr2(q, qd, qdd, ee_pos, u):
+    return [0], qd, [0]
 
-def my_final_constraint1(q, qd, qdd, ee_pos, u):
-    return [3.14 / 2, 0], q, [3.14 / 2, 0]
+my_final_constraints = [my_final_constr1, my_final_constr2]
 
-def my_final_constraint2(q, qd, qdd, ee_pos, u):
-    return [0, 0], qd, [0, 0]
-
-
-my_final_constraints = [my_final_constraint1, my_final_constraint2]
-
+time_horizon = 1.0
 steps = 40
 
 # Load the urdf and calculate the differential equations
@@ -41,6 +48,7 @@ optimizer.load_problem(
     my_cost_func,
     steps,
     in_cond,
+    time_horizon=time_horizon,
     constraints=my_constraints,
     final_constraints=my_final_constraints,
     max_iter=500
