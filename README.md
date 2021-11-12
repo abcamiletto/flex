@@ -86,6 +86,7 @@ optimizer.load_problem(
     constraints=my_constraints, 
     final_constraints=my_final_constraints,
     max_iter=500
+    # get_motor_inertias=True   # useful only for SEA (default is True)
     )
 
 # Solving the non linear problem
