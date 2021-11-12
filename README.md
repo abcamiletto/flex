@@ -81,7 +81,7 @@ optimizer.load_problem(
     cost_func=my_cost_func,
     control_steps=steps,
     initial_cond=in_cond,
-    trajectory_target=trajectory_target = trajectory_target_,
+    trajectory_target=trajectory_target_,
     time_horizon=time_horizon,
     constraints=my_constraints, 
     final_constraints=my_final_constraints,
