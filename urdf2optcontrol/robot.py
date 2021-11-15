@@ -91,6 +91,7 @@ class Robot:
             self.SEAdynamics = self.B.any()  # True when we're modeling also motor inertia != 0
         else:
             print('Flex* is not condidering motor dynamics!')
+            print('So, in the cost function, the control term is u=(theta-q) !')
             self.SEAdynamics = False
         self.upper_theta, self.lower_theta, self.max_effort_theta, self.max_velocity_theta = self.get_limits_plugin(
             urdf_path)

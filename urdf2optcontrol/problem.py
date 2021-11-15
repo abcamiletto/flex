@@ -18,6 +18,10 @@ class Problem:
         self.t = cs.SX.sym("t", 1)
         if trajectory_target is None:
             trajectory_target = lambda t: [0]*self.num_joints
+        else: 
+            print('Flex* is loading the desired trajectory...')
+            print('So, in the cost function, the q term is substituted by (q-qd): \n',
+                    '   q <- (q-qd) !')
         self.traj, self.traj_dot = self.format_trajectory(trajectory_target, self.t)
         self.cost_func = cost_func
         self.final_term_cost = final_term_cost

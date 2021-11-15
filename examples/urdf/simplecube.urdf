@@ -56,7 +56,7 @@
             <origin xyz="-0.035 0 0.038" rpy="0 0 0"/>
             <!--origin xyz="0 0 0" rpy="0 0 0"/-->
             <mass value="0.20"/>
-            <inertia ixx="0.001" iyy="0.001" izz="0.001" ixy="0" ixz="0" iyz="0"/>
+            <inertia ixx="0.001" iyy="0.001" izz="0.1" ixy="0" ixz="0" iyz="0"/>
         </inertial>	
         <visual>
             <origin xyz="0 0 0.022" rpy="1.57 0 0"/>
@@ -85,25 +85,6 @@
         <self_collide>1</self_collide>
     </gazebo>
 
-    <!--gazebo>
-       <plugin name="sea_j1" filename="libsea_plugin.so">
-           <joint>J1</joint>
-           <namespace>simple_1dof</namespace>
-           <stiffness>1</stiffness>
-           <pub_eltau>false</pub_eltau>
-           <pub_state>true</pub_state>
-           <sub_ext_tau>false</sub_ext_tau>
-       </plugin>
-    </gazebo-->
-     <!--gazebo>
-         <plugin name="advanced_vsa_j1" filename="libadvanced_plugin.so">
-             <joint>J1</joint>
-             <control_type>2</control_type>
-             <pub_eltau>true</pub_eltau>
-             <pub_state>true</pub_state>
-             <sub_ext_tau>true</sub_ext_tau>
-         </plugin>
-     </gazebo-->
      <!-- Legend for the libsea_plugin.so custom plugin 
     
         # The operational modes are the following
@@ -116,30 +97,6 @@
         #   [6] = PIDEqPres
     -->
     <!-- Plugin insertion -->
-    <!--gazebo>
-        <plugin name="sea_j1" filename="libsea_plugin.so">
-            
-            <joint>J1</joint>
-            <operation_mode>4</operation_mode>
-            <pub_eltau>true</pub_eltau>
-            <pub_state>true</pub_state>
-            <sub_ext_tau>true</sub_ext_tau>
-            
-            
-            <spring_k1>0.002</spring_k1>
-            <max_def>0.8</max_def>
-            
-            <mot_J>0.009</mot_J>  
-            <mot_D>0.002</mot_1_D>
-            <mot_1_tauMax>20.0</mot_1_tauMax>
-            <mot_1_maxVel>30.0</mot_1_maxVel>
-            <mot_1_minPos>-inf</mot_1_minPos>
-            <mot_1_maxPos>inf</mot_1_maxPos>
-            <mot_1_tauFric>0.0</mot_1_tauFric>
-        </plugin>
-    </gazebo-->
-    
-    <!-- Plugin insertion -->
     <gazebo>
         <plugin name="sea_j" filename="libsea_plugin.so">
             # REQUIRED tags
@@ -151,16 +108,16 @@
             
             # Available OPTIONAL tags with default values are
             <!-- spring parameters -->
-            <spring_k>10</spring_k>
+            <spring_k>10.0</spring_k>
             <max_def>5.0</max_def>
             <!-- motors parameters -->
-            <mot_J>0.1</mot_J>                   # motor inertia
-            <mot_D>0.2</mot_D>                   # motor damping
+            <mot_J>0.02</mot_J>                     # motor inertia
+            <mot_D>0.3</mot_D>                      # motor damping
             <mot_tauMax>6.0</mot_tauMax>            # maximum motor torque
             <mot_maxVel>6.0</mot_maxVel>            # maximum motor velocity
-            <mot_minPos>-10</mot_minPos>           # minimum motor position
-            <mot_maxPos>10</mot_maxPos>            # maximum motor position
-            <mot_tauFric>0.1</mot_tauFric>          # static motor friction 
+            <mot_minPos>-10</mot_minPos>            # minimum motor position
+            <mot_maxPos>10</mot_maxPos>             # maximum motor position
+            <mot_tauFric>0.5</mot_tauFric>          # static motor friction 
         </plugin>
     </gazebo>
 
