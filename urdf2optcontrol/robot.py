@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 
 class Robot:
     '''Class that handles the loading process from the URDF'''
-    def __init__(self, urdf_path, root, tip, get_motor_inertias=True):
+    def __init__(self, urdf_path, root, tip, get_motor_dynamics=True):
         '''Takes the minimum info required to start the dynamics matrix calculations.
         Motor inertias and SEA dampings can be given manually, or will be automatically parsed'''
 
@@ -31,7 +31,7 @@ class Robot:
         # SEA Stuff
         self.sea = self.get_joints_plugin(urdf_path, 'spring_k', 0, diag=True).any()  # True if at least one joint is sea
         if self.sea:
-            self.get_seaplugin_values(urdf_path, get_motor_inertias)
+            self.get_seaplugin_values(urdf_path, get_motor_dynamics)
 
     @staticmethod
     def _load_urdf(urdf_path: str):
@@ -80,19 +80,21 @@ class Robot:
         max_velocity_theta = self.get_joints_plugin(urdf_path, 'mot_maxVel', float('inf'))
         return upper_theta, lower_theta, max_effort_theta, max_velocity_theta
 
-    def get_seaplugin_values(self, urdf_path, get_motor_inertias):
+    def get_seaplugin_values(self, urdf_path, get_motor_dynamics):
         self.K = self.get_joints_plugin(urdf_path, 'spring_k', 0, diag=True)
-        self.B = self.get_joints_plugin(urdf_path, 'mot_J', 0, diag=True)
-        self.FDsea = self.get_joints_plugin(urdf_path, 'mot_D', 0, diag=True)
-        self.FMusea = self.get_joints_plugin(urdf_path, 'mot_tauFric', 0, diag=True)
-        self.SEAvars()
-        if get_motor_inertias == True:  # if user wants to consider motor inertias
-            self.SEAinertia = self.B.any()  # True when we're modeling also motor inertia
+        if get_motor_dynamics == True:  # if user wants to consider motor inertias
+            print('Flex* is loading motor dynamics...')
+            self.B = self.get_joints_plugin(urdf_path, 'mot_J', 0, diag=True)
+            self.FDsea = self.get_joints_plugin(urdf_path, 'mot_D', 0, diag=True)
+            self.FMusea = self.get_joints_plugin(urdf_path, 'mot_tauFric', 0, diag=True)
+            self.SEAvars()
+            self.SEAdynamics = self.B.any()  # True when we're modeling also motor inertia != 0
         else:
-            self.SEAinertia = False
+            print('Flex* is not condidering motor dynamics!')
+            self.SEAdynamics = False
         self.upper_theta, self.lower_theta, self.max_effort_theta, self.max_velocity_theta = self.get_limits_plugin(
             urdf_path)
-        if self.SEAinertia:
+        if self.SEAdynamics:
             self.upper_u, self.lower_u = self._fix_boundaries(self.max_effort_theta)
             self.upper_thetad, self.lower_thetad = self._fix_boundaries(self.max_velocity_theta)
         else:

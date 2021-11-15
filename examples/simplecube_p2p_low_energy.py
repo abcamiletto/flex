@@ -41,7 +41,7 @@ time_horizon = 1.0
 steps = 40
 
 # Load the urdf and calculate the differential equations
-optimizer.load_robot(urdf_path, root, end)
+optimizer.load_robot(urdf_path, root, end, get_motor_dynamics=True)
 
 # Loading the problem conditions
 optimizer.load_problem(
@@ -51,7 +51,7 @@ optimizer.load_problem(
     time_horizon=time_horizon,
     constraints=my_constraints,
     final_constraints=my_final_constraints,
-    max_iter=500
+    max_iter=500,
 )
 
 # Solving the non linear problem

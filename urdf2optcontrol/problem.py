@@ -54,7 +54,7 @@ class Problem:
         rhs1 = self.q_dot
         rhs2 = self.M_inv @ (-self.Cq - self.G - self.Fd @ self.q_dot - self.Ff @ cs.sign(self.q_dot))
         # Adjusting RHS for SEA with known inertia. Check the paper for more info.
-        if self.sea and self.SEAinertia: 
+        if self.sea and self.SEAdynamics: 
     
             rhs2 -= self.M_inv @ self.tau_sea
             rhs3 = self.theta_dot
@@ -70,7 +70,7 @@ class Problem:
             self.upper_qd = self.upper_qd + self.upper_thetad
 
         # Adjusting RHS for SEA modeling, with motor inertia unknown
-        elif self.sea and not self.SEAinertia: 
+        elif self.sea and not self.SEAdynamics: 
             rhs2 += -self.M_inv @ self.K @ (self.q - self.u)
             # self.upper_u, self.lower_u = self.upper_q, self.lower_q
             RHS = [rhs1, rhs2]
@@ -93,11 +93,11 @@ class Problem:
 
         # The differentiation of J will be the cost function given by the user, with our symbolic 
         # variables as inputs
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             q_ddot_J = self.q_ddot_val(self.q, self.q_dot, self.theta, self.theta_dot, self.u)
         else:
             q_ddot_J = self.q_ddot_val(self.q,self.q_dot, self.u)
-        if self.sea and not self.SEAinertia:
+        if self.sea and not self.SEAdynamics:
             u_J = self.u - self.q # the instantaneous spent energy is prop to |u-q|
         else:
             u_J = self.u
@@ -120,7 +120,7 @@ class Problem:
 
     def _get_joints_accelerations(self, rhs2):
         '''Returns a CASaDi function that maps the q_ddot from other joints info.'''
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             q_ddot_val = cs.Function('q_ddot_val', [self.q, self.q_dot, self.theta, self.theta_dot, self.u],
                                      [rhs2])
         else:
@@ -177,7 +177,7 @@ class Problem:
 
         # With SEA we have double the state variable and double the initial condition. 
         # We assume to start on the equilibrium
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             initial_cond = initial_cond * 2
 
         # Finally, we integrate all over the timeframe
@@ -230,7 +230,7 @@ class Problem:
 
         # Add a final term cost. If not specified is 0.
         if final_term_cost is not None:
-            if self.sea and self.SEAinertia:
+            if self.sea and self.SEAdynamics:
                 Q_dd = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
                                        Xk[2*self.num_joints:3*self.num_joints], Xk[3*self.num_joints:4*self.num_joints], np.array([0]*self.num_joints))
             else:
@@ -263,7 +263,7 @@ class Problem:
             Uk = np.array([0]*self.num_joints)
 
         EEk_pos_ = self.ee_pos(Xk[0:self.num_joints])
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             Q_ddot_ = self.q_ddot_val(Xk[0:self.num_joints], Xk[self.num_joints:2 * self.num_joints],
                                      Xk[2 * self.num_joints:3 * self.num_joints],
                                      Xk[3 * self.num_joints:4 * self.num_joints], Uk)
@@ -314,7 +314,7 @@ class Problem:
         # Rewriting the results in a more convenient way for both SEA and non SEA cases
         # For 2 Joints and N timesteps results will be formatted as:
         # [[Q0_0, Q0_1, ... Q0_N][Q1_0, Q1_1, ... Q1_N]] where Qi_j is the value of the ith joint at the jth timestep
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             self.q_opt = [opt[idx::(3 * (self.num_joints) + 2 * (self.num_joints))] for idx in range(self.num_joints)]
             self.qd_opt = [opt[self.num_joints + idx::(3 * (self.num_joints) + 2 * (self.num_joints))] for idx in
                            range(self.num_joints)]
@@ -343,7 +343,7 @@ class Problem:
                         'ee_pos': self.ee_opt,
                         'theta': None,
                         'thetad': None}
-        if self.sea and self.SEAinertia:
+        if self.sea and self.SEAdynamics:
             self.result['theta'] = self.theta_opt
             self.result['thetad'] = self.thetad_opt
         return self.result
@@ -360,7 +360,7 @@ class Problem:
             q = cs.vertcat(*[self.q_opt[idx2][idx] for idx2 in range(self.num_joints)])  # load joints opt values
             qd = cs.vertcat(*[self.qd_opt[idx2][idx] for idx2 in range(self.num_joints)])
             u = cs.vertcat(*[self.u_opt[idx2][idx] for idx2 in range(self.num_joints)])
-            if self.sea and self.SEAinertia:
+            if self.sea and self.SEAdynamics:
                 theta = cs.vertcat(*[self.theta_opt[idx2][idx] for idx2 in range(self.num_joints)])
                 theta_dot = cs.vertcat(*[self.thetad_opt[idx2][idx] for idx2 in range(self.num_joints)])
                 qdd = (self.q_ddot_val(q, qd, theta, theta_dot, u)).full().flatten().tolist()  # transform to list
