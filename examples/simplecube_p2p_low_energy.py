@@ -16,7 +16,6 @@ in_cond = [0, 0]
 def my_cost_func(q, qd, qdd, ee_pos, u, t):
     return u.T @ u
 
-
 def my_constraint1(q, qd, qdd, ee_pos, u, t):
     return [-30], u, [30]
 
