@@ -142,6 +142,7 @@ Fourth Round
 Fifth Round
 
 - [x] Development of a visualization function for results generating HTML report
+- [ ] Implement a path tracking with min time optimization
 - [ ] Customization of report layout
 - [ ] Link GitHub page for ROS implementation example
 
