@@ -3,6 +3,7 @@ Here we offer an easy to use library that allows you to do optimal control of a 
 Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of.
 
 <img src="https://github.com/marcobiasizzo/flex_video/blob/main/combined_p2p.gif" width="400" height="400" />
+<img src="https://github.com/marcobiasizzo/flex_video/blob/main/jump.gif" width="400" height="400" />
 
 ## Installation Guide
 We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
