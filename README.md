@@ -1,6 +1,8 @@
 # Flex* - From URDF to Flexible Robots Optimal Control
 Here we offer an easy to use library that allows you to do optimal control of a given robot, via urdf.
-Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of,
+Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of.
+
+![Alt Text](https://github.com/marcobiasizzo/flex_video/blob/main/energy.gif)
 
 ## Installation Guide
 We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
