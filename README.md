@@ -6,7 +6,7 @@ Our tool provide an optimal solution for almost every problem related to a robot
   <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/rrbot.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/jump.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/panda.gif" width="240" height="240" />
 </p>
 
-You can find some automatically generated reports [here](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_videos/blob/main/reports/rrbot_p2p_low_energy_report.html) and [here](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_videos/blob/main/reports/rrbot_p2p_max_speed_report.html).
+Here you can find the automatically generated reports for [minimum energy](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_videos/blob/main/reports/rrbot_p2p_low_energy_report.html) and [maximum final velocity](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_videos/blob/main/reports/rrbot_p2p_max_speed_report.html) problems.
 
 ## Installation Guide
 We wrote a simple bash script that set up all the dependencies and needs for you, leaving with a clean installation of the package.
