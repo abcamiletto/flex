@@ -3,7 +3,7 @@ Here we offer an easy to use library that allows you to do optimal control of a 
 Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of...
 
 <p align="center">
-  <img src="https://github.com/marcobiasizzo/flex_video/blob/main/rrbot.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/jump.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/panda.gif" width="240" height="240" />
+  <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/rrbot.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/jump.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/panda.gif" width="240" height="240" />
 </p>
 
 ## Installation Guide
