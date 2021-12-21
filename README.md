@@ -3,7 +3,7 @@ Here we offer an easy to use library that allows you to do optimal control of a 
 Our tool provide an optimal solution for almost every problem related to a robot that somebody can think of...
 
 <p align="center">
-  <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/rrbot.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/jump.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_video/blob/main/videos/panda.gif" width="240" height="240" />
+  <img src="https://github.com/marcobiasizzo/flex_suppl_material/blob/main/videos/rrbot.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_suppl_material/blob/main/videos/jump.gif" width="240" height="240" /> <img src="https://github.com/marcobiasizzo/flex_suppl_material/blob/main/videos/panda.gif" width="240" height="240" />
 </p>
 
 You can find some examples of automatically generated reports for [minimum energy](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_suppl_material/blob/main/reports/rrbot_p2p_low_energy_report.html) and [maximum final velocity](https://htmlpreview.github.io/?https://github.com/marcobiasizzo/flex_suppl_material/blob/main/reports/rrbot_p2p_max_speed_report.html) problems (others available [here](https://github.com/marcobiasizzo/flex_suppl_material/tree/main/reports)).
